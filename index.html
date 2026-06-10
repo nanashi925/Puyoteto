@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ぷよてと 〜魔王サタンの逆襲〜</title>
+<style>
+  :root{
+    --bg:#1a1230;
+    --panel:#241a44;
+    --accent:#8b5cf6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background: radial-gradient(ellipse at 50% 0%, #2d1f5e 0%, var(--bg) 70%);
+    color:#eee;
+    font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    overflow-x:hidden;
+    -webkit-user-select:none; user-select:none;
+    touch-action:manipulation;
+  }
+  h1{
+    margin:10px 0 2px;
+    font-size:clamp(18px,4vw,30px);
+    background:linear-gradient(180deg,#ffe066,#ff7846);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    text-shadow:0 2px 8px rgba(255,120,70,.25);
+    letter-spacing:.05em;
+  }
+  .sub{font-size:11px; color:#b9a7e8; margin-bottom:8px;}
+  #arena{
+    display:flex; gap:14px; align-items:flex-start; justify-content:center;
+    flex-wrap:nowrap;
+  }
+  .side{
+    background:var(--panel);
+    border:2px solid #4c3a8c;
+    border-radius:12px;
+    padding:8px;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    box-shadow:0 6px 24px rgba(0,0,0,.4);
+  }
+  .side h2{font-size:13px; color:#d6c8ff; font-weight:600;}
+  canvas{display:block; border-radius:6px; background:#0d0a1c;}
+  .hud{display:flex; gap:10px; font-size:12px; color:#cbbcf5; width:100%; justify-content:space-between;}
+  .hud b{color:#ffe066; font-size:14px;}
+  #garbRowP,#garbRowT{height:22px; display:flex; gap:3px; align-items:center; font-size:13px; min-width:100%;}
+  .next-label{font-size:10px;color:#9b8ad0;}
+  /* サタン */
+  #satanBox{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center;
+    width:120px;
+  }
+  #satanFace{
+    font-size:56px; line-height:1;
+    filter:drop-shadow(0 0 12px rgba(139,92,246,.8));
+    transition:transform .15s;
+  }
+  #satanFace.excited{transform:scale(1.25) rotate(-6deg);}
+  #satanName{
+    font-size:11px; font-weight:bold; color:#ffe066;
+    background:#3a2a6e; border:1px solid #8b5cf6; border-radius:8px;
+    padding:2px 8px; margin-top:4px;
+  }
+  #bubble{
+    position:absolute; top:-8px; left:50%;
+    transform:translate(-50%,-100%);
+    background:#fffbe8; color:#3a2a10;
+    font-weight:bold; font-size:14px;
+    padding:7px 12px; border-radius:14px;
+    border:2px solid #e8c84a;
+    white-space:nowrap;
+    opacity:0; transition:opacity .2s;
+    pointer-events:none;
+    z-index:5;
+    max-width:80vw; white-space:normal; text-align:center; min-width:90px;
+  }
+  #bubble.show{opacity:1;}
+  #bubble::after{
+    content:""; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%);
+    border:6px solid transparent; border-top-color:#e8c84a; border-bottom:0;
+  }
+  #chainShout{
+    height:24px; font-size:18px; font-weight:bold; color:#ff7846;
+    text-shadow:0 0 8px rgba(255,120,70,.6);
+  }
+  /* 中央カラム */
+  #midCol{display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:30px; min-width:130px;}
+  #vsMark{font-size:26px; font-weight:bold; color:#8b5cf6; text-shadow:0 0 10px #8b5cf6;}
+  #wins{font-size:12px; color:#cbbcf5; text-align:center;}
+  /* オーバーレイ */
+  #overlay{
+    position:fixed; inset:0; background:rgba(10,6,24,.82);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; z-index:20; text-align:center; padding:20px;
+  }
+  #overlay.hidden{display:none;}
+  #ovTitle{font-size:clamp(22px,6vw,40px); font-weight:bold; color:#ffe066; text-shadow:0 0 16px rgba(255,224,102,.5);}
+  #ovMsg{font-size:14px; color:#d6c8ff; line-height:1.9;}
+  .btn{
+    background:linear-gradient(180deg,#9d6bff,#6d3df0);
+    border:none; border-radius:10px; color:#fff;
+    font-size:16px; font-weight:bold; padding:12px 32px;
+    cursor:pointer; font-family:inherit;
+    box-shadow:0 4px 0 #4a28b0;
+  }
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #4a28b0;}
+  .lvlRow{display:flex; gap:8px;}
+  .lvl{
+    background:#2e2260; border:2px solid #5b46a8; color:#cbbcf5;
+    border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; font-family:inherit;
+  }
+  .lvl.sel{background:#6d3df0; color:#fff; border-color:#b9a0ff;}
+  #muteBtn{
+    position:fixed; top:8px; right:10px; z-index:30;
+    background:#2e2260; border:1px solid #5b46a8; color:#fff;
+    border-radius:8px; padding:5px 10px; font-size:14px; cursor:pointer;
+  }
+  /* タッチ操作 */
+  #touchPad{
+    display:none;
+    gap:8px; margin:10px 0 16px;
+  }
+  .tbtn{
+    width:56px; height:56px; border-radius:50%;
+    background:#33246b; border:2px solid #5b46a8; color:#fff;
+    font-size:22px; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .tbtn:active{background:#6d3df0;}
+  @media (pointer:coarse){ #touchPad{display:flex;} }
+  #help{font-size:11px; color:#8d7cc4; margin:8px 0 14px; text-align:center; line-height:1.8;}
+  @media (max-width:640px){
+    #arena{gap:6px;}
+    #midCol{min-width:0; padding-top:10px;}
+    #satanBox{width:90px;}
+    #satanFace{font-size:42px;}
+  }
+</style>
+</head>
+<body>
+<h1>ぷよてと 〜魔王サタンの逆襲〜</h1>
+<div class="sub">サタン(ぷよ) VS CPU(テトリス)</div>
+<button id="muteBtn" title="掛け声の音声ON/OFF">🔊 声ON</button>
+
+<div id="arena">
+  <!-- プレイヤー(ぷよ) -->
+  <div class="side">
+    <h2>😈 サタン (あなた)</h2>
+    <div id="garbRowP"></div>
+    <canvas id="puyoCv" width="192" height="384"></canvas>
+    <div class="hud">
+      <span>スコア <b id="pScore">0</b></span>
+      <span>最大 <b id="pMaxChain">0</b>連鎖</span>
+    </div>
+  </div>
+
+  <!-- 中央 -->
+  <div id="midCol">
+    <div id="satanBox">
+      <div id="bubble"></div>
+      <div id="satanFace">😈</div>
+      <div id="satanName">魔王サタン</div>
+    </div>
+    <div id="chainShout"></div>
+    <div id="vsMark">VS</div>
+    <div id="wins">サタン <span id="wP">0</span> - <span id="wT">0</span> CPU</div>
+    <div>
+      <div class="next-label">NEXT</div>
+      <canvas id="nextCv" width="48" height="100"></canvas>
+    </div>
+  </div>
+
+  <!-- CPU(テトリス) -->
+  <div class="side">
+    <h2>🤖 CPU</h2>
+    <div id="garbRowT"></div>
+    <canvas id="tetCv" width="180" height="360"></canvas>
+    <div class="hud">
+      <span>ライン <b id="tLines">0</b></span>
+    </div>
+  </div>
+</div>
+
+<div id="touchPad">
+  <button class="tbtn" id="tbL">◀</button>
+  <button class="tbtn" id="tbD">▼</button>
+  <button class="tbtn" id="tbRotL">⟲</button>
+  <button class="tbtn" id="tbRotR">⟳</button>
+  <button class="tbtn" id="tbR">▶</button>
+</div>
+
+<div id="help">
+  ←→:移動 ↓:高速落下 Z / ⟲:左回転 X・↑ / ⟳:右回転 P:ポーズ M:声ON/OFF<br>
+  4つつなげて消そう!連鎖するとテトリス側におじゃまを送り込めるぞ。相手の盤面を埋めれば勝ち!
+</div>
+
+<div id="overlay">
+  <div id="ovTitle">ぷよてと</div>
+  <div id="ovMsg">フハハハハ!我こそは魔王サタン!<br>久方ぶりの勝負、骨の髄まで楽しませてもらうぞ!</div>
+  <div class="lvlRow">
+    <button class="lvl" data-lvl="0">CPU:よわい</button>
+    <button class="lvl sel" data-lvl="1">CPU:ふつう</button>
+    <button class="lvl" data-lvl="2">CPU:つよい</button>
+  </div>
+  <button class="btn" id="startBtn">勝負スタート! (Enter)</button>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   ぷよてと — ぷよぷよ(プレイヤー=サタン) vs テトリス(CPU)
+   ========================================================= */
+
+// ---------- 共通 ----------
+const $ = id => document.getElementById(id);
+const rand = n => Math.floor(Math.random() * n);
+
+// ---------- サタンのボイス ----------
+let voiceOn = true;
+let jaVoice = null;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  jaVoice = vs.find(v => v.lang.startsWith("ja")) || null;
+}
+if ("speechSynthesis" in window){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+function say(text){
+  if (!voiceOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[!!?? …]/g,""));
+  if (jaVoice) u.voice = jaVoice;
+  u.lang = "ja-JP";
+  u.pitch = 0.3;   // 低音の魔王ボイス
+  u.rate = 1.05;
+  speechSynthesis.speak(u);
+}
+
+let bubbleTimer = null;
+function satanSay(text, speak = true, excite = false){
+  const b = $("bubble");
+  b.textContent = text;
+  b.classList.add("show");
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => b.classList.remove("show"), 2200);
+  const f = $("satanFace");
+  if (excite){
+    f.classList.add("excited");
+    setTimeout(() => f.classList.remove("excited"), 400);
+  }
+  if (speak) say(text);
+}
+
+const SATAN = {
+  start: ["フハハハハ!我が魔王の力、見せてくれよう!", "さあ、宴の始まりじゃ!"],
+  chain: ["ジュガム!", "バランガ!", "ディアキュート!", "アブラカタブラ!", "カタストロフィ!!", "これぞ魔王の真の力よーっ!!"],
+  attack: ["くらうがよい!", "フハハハ!", "どうじゃ!"],
+  damaged: ["ぬぅっ!?", "おのれ…小癪な!", "む、やりおるわ…"],
+  pinch: ["ま、まずい…!", "魔王が…追い詰められておる…!?"],
+  zenkeshi: ["全消しじゃ!フーハッハッハ!"],
+  win: ["フハハハハ!見たか、これが魔王サタンの力よ!", "我に勝とうなど百年早いわ!フハハ!"],
+  lose: ["ば…ばかな…この魔王サタンが…!", "ぐぬぬ…今日のところは引いてやるわ…!"],
+};
+const pick = arr => arr[rand(arr.length)];
+
+$("muteBtn").onclick = () => {
+  voiceOn = !voiceOn;
+  $("muteBtn").textContent = voiceOn ? "🔊 声ON" : "🔇 声OFF";
+  if (!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
+};
+
+// ---------- ゲーム全体の状態 ----------
+let running = false, paused = false, gameOver = false;
+let cpuLevel = 1;
+let winsP = 0, winsT = 0;
+let lastTime = 0;
+
+// =========================================================
+//  ぷよ側 (プレイヤー)
+// =========================================================
+const PW = 6, PH = 13, PVIS = 12;       // 13行目(=row0)は隠し行
+const CELL = 32;
+const PCOLORS = [null, "#ff4d4d", "#4dd24d", "#4da6ff", "#ffd24d"]; // 1-4色
+const OJAMA = 9;
+const pcv = $("puyoCv"), pctx = pcv.getContext("2d");
+const ncv = $("nextCv"), nctx = ncv.getContext("2d");
+
+const puyo = {};
+function puyoReset(){
+  puyo.grid = Array.from({length: PH}, () => Array(PW).fill(0));
+  puyo.queue = [newPair(), newPair()];
+  puyo.pair = null;
+  puyo.state = "spawn";       // spawn / fall / settle / pop / drop-garbage / dead
+  puyo.timer = 0;
+  puyo.gravT = 0;
+  puyo.lockT = 0;
+  puyo.chain = 0;
+  puyo.maxChain = 0;
+  puyo.score = 0;
+  puyo.nuisance = 0;          // この連鎖で貯まる攻撃量(おじゃまぷよ換算)
+  puyo.pending = 0;           // 受けるおじゃまぷよ数
+  puyo.popping = [];
+  puyo.fallSpeed = 700;       // ms / 1マス
+  puyo.das = {l:0, r:0, d:0};
+}
+function newPair(){
+  return { a: 1 + rand(4), b: 1 + rand(4) };
+}
+function pairCells(p){
+  // 軸ぷよ(x,y) + 子ぷよ rot: 0上 1右 2下 3左
+  const d = [[0,-1],[1,0],[0,1],[-1,0]][p.rot];
+  return [{x:p.x, y:p.y, c:p.a}, {x:p.x+d[0], y:p.y+d[1], c:p.b}];
+}
+function pFree(x, y){
+  if (x < 0 || x >= PW || y >= PH) return false;
+  if (y < 0) return true;                  // 盤面上空はOK
+  return puyo.grid[y][x] === 0;
+}
+function pairFits(p){
+  return pairCells(p).every(c => pFree(c.x, c.y));
+}
+
+function spawnPair(){
+  const q = puyo.queue.shift();
+  puyo.queue.push(newPair());
+  puyo.pair = { x: 2, y: 1, rot: 0, a: q.a, b: q.b };
+  puyo.gravT = 0; puyo.lockT = 0;
+  if (!pairFits(puyo.pair)){
+    endGame(false);
+    return;
+  }
+  puyo.state = "fall";
+  drawNext();
+}
+
+function tryMove(dx){
+  const p = {...puyo.pair, x: puyo.pair.x + dx};
+  if (pairFits(p)){ puyo.pair.x += dx; return true; }
+  return false;
+}
+function tryRotate(dir){
+  const p = {...puyo.pair, rot: (puyo.pair.rot + dir + 4) % 4};
+  if (pairFits(p)){ puyo.pair.rot = p.rot; return; }
+  // 壁キック
+  for (const k of [-1, 1]){
+    const p2 = {...p, x: p.x + k};
+    if (pairFits(p2)){ puyo.pair.rot = p2.rot; puyo.pair.x = p2.x; return; }
+  }
+  // 縦に挟まれている場合のクイックターン(180°)
+  const p3 = {...puyo.pair, rot: (puyo.pair.rot + 2) % 4};
+  if (pairFits(p3)) puyo.pair.rot = p3.rot;
+}
+
+function lockPair(){
+  for (const c of pairCells(puyo.pair)){
+    if (c.y >= 0) puyo.grid[c.y][c.x] = c.c;
+  }
+  puyo.pair = null;
+  puyo.chain = 0;
+  puyo.nuisance = 0;
+  puyo.state = "settle";
+  puyo.timer = 60;
+}
+
+// 重力で全ぷよを落とす(true=動いた)
+function applyPuyoGravity(){
+  let moved = false;
+  for (let x = 0; x < PW; x++){
+    let write = PH - 1;
+    for (let y = PH - 1; y >= 0; y--){
+      if (puyo.grid[y][x] !== 0){
+        if (write !== y){
+          puyo.grid[write][x] = puyo.grid[y][x];
+          puyo.grid[y][x] = 0;
+          moved = true;
+        }
+        write--;
+      }
+    }
+  }
+  return moved;
+}
+
+// 4つ以上の連結を探す
+function findGroups(){
+  const seen = Array.from({length: PH}, () => Array(PW).fill(false));
+  const groups = [];
+  for (let y = 1; y < PH; y++){          // 隠し行(row0)は消えない
+    for (let x = 0; x < PW; x++){
+      const c = puyo.grid[y][x];
+      if (c === 0 || c === OJAMA || seen[y][x]) continue;
+      const cells = [], stack = [[x, y]];
+      seen[y][x] = true;
+      while (stack.length){
+        const [cx, cy] = stack.pop();
+        cells.push([cx, cy]);
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || nx >= PW || ny < 1 || ny >= PH) continue;
+          if (!seen[ny][nx] && puyo.grid[ny][nx] === c){
+            seen[ny][nx] = true;
+            stack.push([nx, ny]);
+          }
+        }
+      }
+      if (cells.length >= 4) groups.push({color: c, cells});
+    }
+  }
+  return groups;
+}
+
+const CHAIN_POWER = [0, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320];
+
+function startPop(groups){
+  puyo.chain++;
+  puyo.maxChain = Math.max(puyo.maxChain, puyo.chain);
+  // スコア計算
+  let cleared = 0;
+  const colors = new Set();
+  let groupBonus = 0;
+  const popSet = new Set();
+  for (const g of groups){
+    cleared += g.cells.length;
+    colors.add(g.color);
+    groupBonus += Math.max(0, Math.min(g.cells.length - 4, 7));
+    for (const [x, y] of g.cells) popSet.add(y * PW + x);
+  }
+  // 隣接おじゃまも消す
+  for (const g of groups){
+    for (const [x, y] of g.cells){
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < PW && ny >= 1 && ny < PH && puyo.grid[ny][nx] === OJAMA){
+          popSet.add(ny * PW + nx);
+        }
+      }
+    }
+  }
+  const colorBonus = [0, 0, 3, 6, 12][Math.min(colors.size, 4)];
+  const chainBonus = CHAIN_POWER[Math.min(puyo.chain - 1, CHAIN_POWER.length - 1)];
+  const mult = Math.max(1, Math.min(999, chainBonus + colorBonus + groupBonus));
+  const pts = cleared * 10 * mult;
+  puyo.score += pts;
+  puyo.nuisance += pts / 70;
+  puyo.popping = [...popSet];
+  puyo.state = "pop";
+  puyo.timer = 380;
+  // 掛け声!
+  const line = SATAN.chain[Math.min(puyo.chain - 1, SATAN.chain.length - 1)];
+  satanSay(line, true, puyo.chain >= 2);
+  $("chainShout").textContent = puyo.chain >= 2 ? `${puyo.chain}連鎖!!` : "";
+}
+
+function finishPop(){
+  for (const key of puyo.popping){
+    puyo.grid[Math.floor(key / PW)][key % PW] = 0;
+  }
+  puyo.popping = [];
+  puyo.state = "settle";
+  puyo.timer = 60;
+}
+
+function chainEnded(){
+  $("chainShout").textContent = "";
+  // 全消しボーナス
+  if (puyo.chain > 0 && puyo.grid.every(row => row.every(c => c === 0))){
+    puyo.nuisance += 30;
+    satanSay(pick(SATAN.zenkeshi), true, true);
+  }
+  // 攻撃: 相殺してから送る
+  let atk = Math.round(puyo.nuisance);
+  puyo.nuisance = 0;
+  if (atk > 0){
+    const offset = Math.min(atk, puyo.pending);
+    puyo.pending -= offset;
+    atk -= offset;
+    const lines = Math.floor(atk / 6);   // おじゃまぷよ6個 = テトリス1段
+    if (lines > 0){
+      tet.pending += lines;
+      if (puyo.chain >= 3) satanSay(pick(SATAN.attack), false, true);
+    }
+  }
+  // 受けるおじゃまが残っていれば降らせる
+  if (puyo.pending > 0){
+    dropOjama();
+  } else {
+    puyo.state = "spawn";
+  }
+  updateHud();
+}
+
+function dropOjama(){
+  const n = Math.min(puyo.pending, 30);
+  puyo.pending -= n;
+  const cols = [];
+  for (let i = 0; i < n; i++) cols.push(i % PW);
+  // 1行ごとにシャッフルした列順で落とす
+  for (let i = cols.length - 1; i > 0; i--){
+    const j = rand(i + 1);
+    [cols[i], cols[j]] = [cols[j], cols[i]];
+  }
+  for (const x of cols){
+    for (let y = 0; y < PH; y++){
+      if (y === PH - 1 || puyo.grid[y + 1][x] !== 0){
+        if (puyo.grid[y][x] === 0) puyo.grid[y][x] = OJAMA;
+        break;
+      }
+    }
+  }
+  if (n >= 6) satanSay(pick(SATAN.damaged), true);
+  puyo.state = "drop-garbage";
+  puyo.timer = 260;
+}
+
+function updatePuyo(dt, keys){
+  switch (puyo.state){
+    case "spawn":
+      spawnPair();
+      break;
+    case "fall": {
+      const p = puyo.pair;
+      if (!p) break;
+      // 横移動 DAS
+      handleDas(dt, keys);
+      // 落下
+      const soft = keys.down;
+      puyo.gravT += dt * (soft ? 14 : 1);
+      const interval = puyo.fallSpeed;
+      while (puyo.gravT >= interval){
+        puyo.gravT -= interval;
+        const down = {...p, y: p.y + 1};
+        if (pairFits(down)){
+          p.y++;
+          puyo.lockT = 0;
+          if (soft) puyo.score += 1;
+        } else {
+          puyo.lockT = 1;  // 接地
+        }
+      }
+      if (puyo.lockT > 0){
+        puyo.lockT += dt;
+        const down = {...p, y: p.y + 1};
+        if (pairFits(down)) { puyo.lockT = 0; }
+        else if (puyo.lockT > (keys.down ? 80 : 420)){
+          lockPair();
+        }
+      }
+      break;
+    }
+    case "settle":
+      puyo.timer -= dt;
+      if (puyo.timer <= 0){
+        if (applyPuyoGravity()){
+          puyo.timer = 50;
+        } else {
+          const groups = findGroups();
+          if (groups.length) startPop(groups);
+          else chainEnded();
+        }
+      }
+      break;
+    case "pop":
+      puyo.timer -= dt;
+      if (puyo.timer <= 0) finishPop();
+      break;
+    case "drop-garbage":
+      puyo.timer -= dt;
+      if (puyo.timer <= 0){
+        if (applyPuyoGravity()) puyo.timer = 50;
+        else puyo.state = "spawn";
+      }
+      break;
+  }
+}
+
+// ---------- 入力 ----------
+const keys = {left:false, right:false, down:false};
+function handleDas(dt, keys){
+  const DAS = 160, ARR = 40;
+  for (const dir of ["left", "right"]){
+    const d = dir === "left" ? -1 : 1;
+    if (keys[dir]){
+      puyo.das[dir[0]] += dt;
+      if (puyo.das[dir[0] + "init"]){
+        // 初回押下は即時移動済み
+        if (puyo.das[dir[0]] > DAS){
+          while (puyo.das[dir[0]] > DAS + ARR){
+            puyo.das[dir[0]] -= ARR;
+            tryMove(d);
+          }
+        }
+      }
+    } else {
+      puyo.das[dir[0]] = 0;
+      puyo.das[dir[0] + "init"] = false;
+    }
+  }
+}
+function pressDir(dir){
+  keys[dir] = true;
+  if (puyo.state === "fall" && puyo.pair){
+    tryMove(dir === "left" ? -1 : 1);
+  }
+  puyo.das[dir[0]] = 0;
+  puyo.das[dir[0] + "init"] = true;
+}
+
+document.addEventListener("keydown", e => {
+  if (["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key)) e.preventDefault();
+  if (e.repeat) return;
+  if (!running){
+    if (e.key === "Enter") startGame();
+    return;
+  }
+  if (gameOver){
+    if (e.key === "Enter") startGame();
+    return;
+  }
+  switch (e.key){
+    case "ArrowLeft": pressDir("left"); break;
+    case "ArrowRight": pressDir("right"); break;
+    case "ArrowDown": keys.down = true; break;
+    case "ArrowUp": case "x": case "X":
+      if (puyo.state === "fall") tryRotate(1); break;
+    case "z": case "Z":
+      if (puyo.state === "fall") tryRotate(-1); break;
+    case "p": case "P":
+      paused = !paused;
+      satanSay(paused ? "ひと休みじゃ" : "再開じゃ!", false);
+      break;
+    case "m": case "M": $("muteBtn").click(); break;
+  }
+});
+document.addEventListener("keyup", e => {
+  if (e.key === "ArrowLeft") keys.left = false;
+  if (e.key === "ArrowRight") keys.right = false;
+  if (e.key === "ArrowDown") keys.down = false;
+});
+
+// タッチボタン
+function bindTouch(id, down, up){
+  const el = $(id);
+  el.addEventListener("pointerdown", e => { e.preventDefault(); down(); });
+  el.addEventListener("pointerup", e => { e.preventDefault(); if (up) up(); });
+  el.addEventListener("pointerleave", () => { if (up) up(); });
+}
+bindTouch("tbL", () => pressDir("left"), () => keys.left = false);
+bindTouch("tbR", () => pressDir("right"), () => keys.right = false);
+bindTouch("tbD", () => keys.down = true, () => keys.down = false);
+bindTouch("tbRotL", () => { if (running && puyo.state === "fall") tryRotate(-1); });
+bindTouch("tbRotR", () => { if (running && puyo.state === "fall") tryRotate(1); });
+
+// =========================================================
+//  テトリス側 (CPU)
+// =========================================================
+const TW = 10, TH = 22, TVIS = 20, TCELL = 18;
+const tcv = $("tetCv"), tctx = tcv.getContext("2d");
+const TSHAPES = {
+  I: [[[0,1],[1,1],[2,1],[3,1]], [[2,0],[2,1],[2,2],[2,3]]],
+  O: [[[1,0],[2,0],[1,1],[2,1]]],
+  T: [[[0,1],[1,1],[2,1],[1,0]], [[1,0],[1,1],[1,2],[2,1]], [[0,1],[1,1],[2,1],[1,2]], [[1,0],[1,1],[1,2],[0,1]]],
+  S: [[[1,0],[2,0],[0,1],[1,1]], [[1,0],[1,1],[2,1],[2,2]]],
+  Z: [[[0,0],[1,0],[1,1],[2,1]], [[2,0],[1,1],[2,1],[1,2]]],
+  J: [[[0,0],[0,1],[1,1],[2,1]], [[1,0],[2,0],[1,1],[1,2]], [[0,1],[1,1],[2,1],[2,2]], [[1,0],[1,1],[0,2],[1,2]]],
+  L: [[[2,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[1,2],[2,2]], [[0,1],[1,1],[2,1],[0,2]], [[0,0],[1,0],[1,1],[1,2]]],
+};
+const TCOLOR = {I:"#4dd2ff", O:"#ffd24d", T:"#c44dff", S:"#4dd24d", Z:"#ff4d6b", J:"#4d6bff", L:"#ff9a4d", G:"#777"};
+const TNAMES = Object.keys(TSHAPES);
+
+const tet = {};
+function tetReset(){
+  tet.grid = Array.from({length: TH}, () => Array(TW).fill(null));
+  tet.bag = [];
+  tet.piece = null;
+  tet.lines = 0;
+  tet.pending = 0;          // 受けるおじゃま段数
+  tet.gravT = 0;
+  tet.moveT = 0;
+  tet.clearT = 0;
+  tet.clearing = [];
+  tet.plan = null;
+  // CPUレベル: 思考速度と精度
+  tet.moveInterval = [200, 120, 70][cpuLevel];
+  tet.gravity = [800, 650, 500][cpuLevel];
+  tet.blunder = [0.30, 0.10, 0.02][cpuLevel];
+}
+function tetBag(){
+  if (tet.bag.length === 0){
+    tet.bag = [...TNAMES];
+    for (let i = tet.bag.length - 1; i > 0; i--){
+      const j = rand(i + 1);
+      [tet.bag[i], tet.bag[j]] = [tet.bag[j], tet.bag[i]];
+    }
+  }
+  return tet.bag.pop();
+}
+function tetCells(name, rot, x, y){
+  const shapes = TSHAPES[name];
+  return shapes[rot % shapes.length].map(([cx, cy]) => [cx + x, cy + y]);
+}
+function tetFits(name, rot, x, y){
+  return tetCells(name, rot, x, y).every(([cx, cy]) =>
+    cx >= 0 && cx < TW && cy < TH && (cy < 0 || tet.grid[cy][cx] === null));
+}
+function tetSpawn(){
+  const name = tetBag();
+  tet.piece = { name, rot: 0, x: 3, y: 0 };
+  if (!tetFits(name, 0, 3, 0)){
+    endGame(true);
+    return;
+  }
+  tet.plan = planCpuMove(name);
+  tet.gravT = 0;
+}
+
+// --- CPU AI: 全配置を評価して最良手を選ぶ ---
+function planCpuMove(name){
+  const shapes = TSHAPES[name];
+  const options = [];
+  for (let rot = 0; rot < shapes.length; rot++){
+    for (let x = -2; x < TW; x++){
+      if (!tetFits(name, rot, x, 0)) continue;
+      let y = 0;
+      while (tetFits(name, rot, x, y + 1)) y++;
+      // 盤面シミュレーション
+      const g = tet.grid.map(r => [...r]);
+      for (const [cx, cy] of tetCells(name, rot, x, y)){
+        if (cy >= 0) g[cy][cx] = name;
+      }
+      let lines = 0;
+      for (let ry = 0; ry < TH; ry++){
+        if (g[ry].every(c => c !== null)){ lines++; g.splice(ry, 1); g.unshift(Array(TW).fill(null)); }
+      }
+      // 評価
+      let agg = 0, holes = 0, bump = 0, prevH = -1;
+      for (let cx = 0; cx < TW; cx++){
+        let h = 0, seenBlock = false;
+        for (let cy = 0; cy < TH; cy++){
+          if (g[cy][cx] !== null){ if (!seenBlock){ h = TH - cy; seenBlock = true; } }
+          else if (seenBlock) holes++;
+        }
+        agg += h;
+        if (prevH >= 0) bump += Math.abs(h - prevH);
+        prevH = h;
+      }
+      const score = lines * 0.9 - agg * 0.51 - holes * 1.7 - bump * 0.18;
+      options.push({rot, x, score});
+    }
+  }
+  options.sort((a, b) => b.score - a.score);
+  if (options.length === 0) return null;
+  // たまにミスする(レベル依存)
+  const idx = Math.random() < tet.blunder ? Math.min(rand(3), options.length - 1) : 0;
+  return options[idx];
+}
+
+function tetLock(){
+  for (const [cx, cy] of tetCells(tet.piece.name, tet.piece.rot, tet.piece.x, tet.piece.y)){
+    if (cy >= 0) tet.grid[cy][cx] = tet.piece.name;
+  }
+  tet.piece = null;
+  // ライン消去チェック
+  tet.clearing = [];
+  for (let y = 0; y < TH; y++){
+    if (tet.grid[y].every(c => c !== null)) tet.clearing.push(y);
+  }
+  if (tet.clearing.length){
+    tet.clearT = 240;
+  } else {
+    insertTetGarbage();
+  }
+}
+function finishTetClear(){
+  const n = tet.clearing.length;
+  for (const y of tet.clearing){
+    tet.grid.splice(y, 1);
+    tet.grid.unshift(Array(TW).fill(null));
+  }
+  tet.clearing = [];
+  tet.lines += n;
+  // 攻撃: ライン数 → おじゃまぷよ
+  let atk = [0, 1, 5, 10, 20][n] || 20;
+  if (atk > 0){
+    const offset = Math.min(atk, tet.pending);
+    tet.pending -= offset;
+    atk -= offset;
+    if (atk > 0){
+      puyo.pending += atk;
+      if (atk >= 6 && puyoDanger()) satanSay(pick(SATAN.pinch), true);
+    }
+  }
+  insertTetGarbage();
+  updateHud();
+}
+function insertTetGarbage(){
+  const n = Math.min(tet.pending, 12);
+  tet.pending -= n;
+  for (let i = 0; i < n; i++){
+    tet.grid.shift();
+    const row = Array(TW).fill("G");
+    row[rand(TW)] = null;
+    tet.grid.push(row);
+  }
+  updateHud();
+}
+function puyoDanger(){
+  // 3列目が高く積み上がっているか
+  for (let y = 1; y < 5; y++) if (puyo.grid[y][2] !== 0) return true;
+  return false;
+}
+
+function updateTet(dt){
+  if (tet.clearing.length){
+    tet.clearT -= dt;
+    if (tet.clearT <= 0) finishTetClear();
+    return;
+  }
+  if (!tet.piece){
+    tetSpawn();
+    return;
+  }
+  const p = tet.piece;
+  // CPU操作
+  tet.moveT += dt;
+  if (tet.plan && tet.moveT >= tet.moveInterval){
+    tet.moveT = 0;
+    if (p.rot !== tet.plan.rot){
+      const nr = (p.rot + 1) % TSHAPES[p.name].length;
+      if (tetFits(p.name, nr, p.x, p.y)) p.rot = nr;
+    } else if (p.x !== tet.plan.x){
+      const dx = p.x < tet.plan.x ? 1 : -1;
+      if (tetFits(p.name, p.rot, p.x + dx, p.y)) p.x += dx;
+      else tet.plan.x = p.x; // 詰まったら諦める
+    }
+  }
+  // 重力 (目標位置に着いたら高速落下)
+  const arrived = tet.plan && p.rot === tet.plan.rot && p.x === tet.plan.x;
+  tet.gravT += dt * (arrived ? 10 : 1);
+  while (tet.gravT >= tet.gravity){
+    tet.gravT -= tet.gravity;
+    if (tetFits(p.name, p.rot, p.x, p.y + 1)) p.y++;
+    else { tetLock(); return; }
+  }
+}
+
+// =========================================================
+//  描画
+// =========================================================
+function drawPuyoBall(ctx, x, y, c, size, popFlash){
+  const r = size / 2 - 1.5;
+  const cx = x + size / 2, cy = y + size / 2;
+  if (c === OJAMA){
+    ctx.fillStyle = popFlash ? "#fff" : "#9aa";
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#445";
+    ctx.beginPath(); ctx.arc(cx - r*0.32, cy - r*0.15, r*0.18, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + r*0.32, cy - r*0.15, r*0.18, 0, Math.PI*2); ctx.fill();
+    return;
+  }
+  ctx.fillStyle = popFlash ? "#fff" : PCOLORS[c];
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  if (!popFlash){
+    // ハイライト
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    ctx.beginPath(); ctx.arc(cx - r*0.35, cy - r*0.4, r*0.3, 0, Math.PI*2); ctx.fill();
+    // 目
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(cx - r*0.3, cy + r*0.05, r*0.26, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + r*0.3, cy + r*0.05, r*0.26, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#223";
+    ctx.beginPath(); ctx.arc(cx - r*0.26, cy + r*0.08, r*0.12, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + r*0.34, cy + r*0.08, r*0.12, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawPuyo(){
+  pctx.clearRect(0, 0, pcv.width, pcv.height);
+  // グリッド線
+  pctx.strokeStyle = "rgba(255,255,255,.04)";
+  for (let x = 1; x < PW; x++){
+    pctx.beginPath(); pctx.moveTo(x * CELL, 0); pctx.lineTo(x * CELL, pcv.height); pctx.stroke();
+  }
+  // ばつ印(死亡判定マス = 3列目)
+  pctx.strokeStyle = "rgba(255,80,80,.5)";
+  pctx.lineWidth = 2;
+  const mx = 2 * CELL + CELL/2, my = CELL/2;
+  pctx.beginPath();
+  pctx.moveTo(mx-7, my-7); pctx.lineTo(mx+7, my+7);
+  pctx.moveTo(mx+7, my-7); pctx.lineTo(mx-7, my+7);
+  pctx.stroke();
+  pctx.lineWidth = 1;
+  const flash = puyo.state === "pop" && Math.floor(puyo.timer / 80) % 2 === 0;
+  const popSet = new Set(puyo.popping);
+  for (let y = 1; y < PH; y++){
+    for (let x = 0; x < PW; x++){
+      const c = puyo.grid[y][x];
+      if (!c) continue;
+      drawPuyoBall(pctx, x * CELL, (y - 1) * CELL, c, CELL, flash && popSet.has(y * PW + x));
+    }
+  }
+  if (puyo.pair && puyo.state === "fall"){
+    // ゴースト
+    let gy = puyo.pair.y;
+    while (pairFits({...puyo.pair, y: gy + 1})) gy++;
+    pctx.globalAlpha = 0.25;
+    for (const c of pairCells({...puyo.pair, y: gy})){
+      if (c.y >= 1) drawPuyoBall(pctx, c.x * CELL, (c.y - 1) * CELL, c.c, CELL, false);
+    }
+    pctx.globalAlpha = 1;
+    for (const c of pairCells(puyo.pair)){
+      if (c.y >= 1) drawPuyoBall(pctx, c.x * CELL, (c.y - 1) * CELL, c.c, CELL, false);
+    }
+  }
+}
+
+function drawNext(){
+  nctx.clearRect(0, 0, ncv.width, ncv.height);
+  puyo.queue.forEach((q, i) => {
+    const oy = i * 52 + 4;
+    drawPuyoBall(nctx, 12, oy + 24, q.a, 24, false);
+    drawPuyoBall(nctx, 12, oy, q.b, 24, false);
+  });
+}
+
+function drawTet(){
+  tctx.clearRect(0, 0, tcv.width, tcv.height);
+  tctx.strokeStyle = "rgba(255,255,255,.04)";
+  for (let x = 1; x < TW; x++){
+    tctx.beginPath(); tctx.moveTo(x * TCELL, 0); tctx.lineTo(x * TCELL, tcv.height); tctx.stroke();
+  }
+  const flash = tet.clearing.length && Math.floor(tet.clearT / 60) % 2 === 0;
+  const clearSet = new Set(tet.clearing);
+  for (let y = TH - TVIS; y < TH; y++){
+    for (let x = 0; x < TW; x++){
+      const c = tet.grid[y][x];
+      if (!c) continue;
+      tctx.fillStyle = (flash && clearSet.has(y)) ? "#fff" : TCOLOR[c];
+      const px = x * TCELL, py = (y - (TH - TVIS)) * TCELL;
+      tctx.fillRect(px + 1, py + 1, TCELL - 2, TCELL - 2);
+      tctx.fillStyle = "rgba(255,255,255,.2)";
+      tctx.fillRect(px + 1, py + 1, TCELL - 2, 3);
+    }
+  }
+  if (tet.piece){
+    const p = tet.piece;
+    tctx.fillStyle = TCOLOR[p.name];
+    for (const [cx, cy] of tetCells(p.name, p.rot, p.x, p.y)){
+      if (cy < TH - TVIS) continue;
+      const px = cx * TCELL, py = (cy - (TH - TVIS)) * TCELL;
+      tctx.fillRect(px + 1, py + 1, TCELL - 2, TCELL - 2);
+    }
+  }
+}
+
+function updateHud(){
+  $("pScore").textContent = puyo.score.toLocaleString();
+  $("pMaxChain").textContent = puyo.maxChain;
+  $("tLines").textContent = tet.lines;
+  // 予告おじゃま
+  const gp = $("garbRowP");
+  gp.innerHTML = "";
+  let rest = puyo.pending;
+  const big = Math.floor(rest / 30); rest %= 30;
+  const mid = Math.floor(rest / 6); rest %= 6;
+  gp.innerHTML =
+    "🪨".repeat(Math.min(big, 4)) +
+    "🌑".repeat(Math.min(mid, 5)) +
+    "⚫".repeat(rest) +
+    (puyo.pending > 0 ? ` <span style="color:#ff9a9a">${puyo.pending}</span>` : "");
+  const gt = $("garbRowT");
+  gt.innerHTML = tet.pending > 0
+    ? `<span style="color:#ff9a9a">▲ ${tet.pending} 段</span>`
+    : "";
+}
+
+// =========================================================
+//  メインループ / 進行
+// =========================================================
+function loop(t){
+  const dt = Math.min(50, t - lastTime);
+  lastTime = t;
+  if (running && !paused && !gameOver){
+    updatePuyo(dt, keys);
+    updateTet(dt);
+    // スピードアップ(マージンタイム)
+    puyo.elapsed = (puyo.elapsed || 0) + dt;
+    puyo.fallSpeed = Math.max(220, 700 - puyo.elapsed / 400);
+  }
+  drawPuyo();
+  drawTet();
+  if (paused){
+    pctx.fillStyle = "rgba(0,0,0,.6)";
+    pctx.fillRect(0, 0, pcv.width, pcv.height);
+    pctx.fillStyle = "#fff";
+    pctx.font = "bold 20px sans-serif";
+    pctx.textAlign = "center";
+    pctx.fillText("PAUSE", pcv.width / 2, pcv.height / 2);
+  }
+  requestAnimationFrame(loop);
+}
+
+function startGame(){
+  puyoReset();
+  tetReset();
+  gameOver = false;
+  paused = false;
+  running = true;
+  $("overlay").classList.add("hidden");
+  $("chainShout").textContent = "";
+  updateHud();
+  satanSay(pick(SATAN.start), true, true);
+}
+
+function endGame(playerWon){
+  gameOver = true;
+  if (playerWon) winsP++; else winsT++;
+  $("wP").textContent = winsP;
+  $("wT").textContent = winsT;
+  const line = playerWon ? pick(SATAN.win) : pick(SATAN.lose);
+  satanSay(line, true, true);
+  setTimeout(() => {
+    $("ovTitle").textContent = playerWon ? "🏆 サタンの勝利!" : "💥 ばたんきゅ〜…";
+    $("ovMsg").innerHTML = line + "<br><br>戦績: サタン " + winsP + " 勝 - CPU " + winsT + " 勝";
+    $("startBtn").textContent = "もう一度勝負! (Enter)";
+    $("overlay").classList.remove("hidden");
+  }, 1600);
+}
+
+// レベル選択
+document.querySelectorAll(".lvl").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".lvl").forEach(b => b.classList.remove("sel"));
+    btn.classList.add("sel");
+    cpuLevel = +btn.dataset.lvl;
+  };
+});
+$("startBtn").onclick = startGame;
+
+requestAnimationFrame(t => { lastTime = t; requestAnimationFrame(loop); });
+</script>
+</body>
+</html>
