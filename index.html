@@ -179,6 +179,10 @@
       <div class="next-label">NEXT</div>
       <canvas id="nextCv" width="56" height="110"></canvas>
     </div>
+    <div>
+      <div class="next-label">HOLD</div>
+      <canvas id="holdCv" width="56" height="56"></canvas>
+    </div>
   </div>
 
   <!-- CPU -->
@@ -194,13 +198,14 @@
   <button class="tbtn" id="tbL">◀</button>
   <button class="tbtn" id="tbD">▼</button>
   <button class="tbtn" id="tbHD">⤓</button>
+  <button class="tbtn" id="tbHold">📦</button>
   <button class="tbtn" id="tbRotL">⟲</button>
   <button class="tbtn" id="tbRotR">⟳</button>
   <button class="tbtn" id="tbR">▶</button>
 </div>
 
 <div id="help">
-  ←→:移動 ↓:高速落下 スペース:ハードドロップ Z / ⟲:左回転 X・↑ / ⟳:右回転 P:ポーズ M:声ON/OFF<br>
+  ←→:移動 ↓:高速落下 スペース:ハードドロップ Z / ⟲:左回転 X・↑ / ⟳:右回転 C・Shift / 📦:ホールド P:ポーズ M:声ON/OFF<br>
   ぷよは4つつなげると消える/テトリミノは横1列そろえると消える。連鎖で大ダメージ!
 </div>
 
@@ -421,6 +426,7 @@ function newPuyoSide(control){
     grid: null, queue: [], pair: null,
     state: "spawn", timer: 0, gravT: 0, lockT: 0,
     chain: 0, maxChain: 0, score: 0, nuisance: 0, pending: 0,
+    hold: null, holdUsed: false,
     popping: [], fallSpeed: 700,
     das: {lt: 0, rt: 0},
     plan: null, thinkT: 0,
@@ -447,9 +453,13 @@ function pFree(P, x, y){
 }
 function pairFits(P, p){ return pairCells(p).every(c => pFree(P, c.x, c.y)); }
 
-function puyoSpawn(P){
-  const q = P.queue.shift();
-  P.queue.push(newPair());
+function puyoSpawn(P, forced){
+  let q = forced;
+  if (!q){
+    q = P.queue.shift();
+    P.queue.push(newPair());
+    P.holdUsed = false;
+  }
   P.pair = { x: 2, y: 1, rot: 0, a: q.a, b: q.b };
   P.gravT = 0; P.lockT = 0;
   if (!pairFits(P, P.pair)){
@@ -479,6 +489,14 @@ function puyoRotate(P, dir){
 function puyoHardDrop(P){
   while (pairFits(P, {...P.pair, y: P.pair.y + 1})) P.pair.y++;
   puyoLock(P);
+}
+function puyoHold(P){
+  if (P.holdUsed) return;
+  const cur = { a: P.pair.a, b: P.pair.b };
+  const out = P.hold;
+  P.hold = cur;
+  puyoSpawn(P, out);
+  P.holdUsed = true;
 }
 function puyoLock(P){
   for (const c of pairCells(P.pair)){
@@ -696,6 +714,7 @@ function newTetSide(control){
     W: 10, H: 22, VIS: 20,
     grid: null, bag: [], piece: null, queue: [],
     lines: 0, score: 0, pending: 0,
+    hold: null, holdUsed: false,
     gravT: 0, lockT: 0, moveT: 0, clearT: 0, clearing: [],
     plan: null,
     das: {lt: 0, rt: 0},
@@ -727,9 +746,13 @@ function tetFits(T, name, rot, x, y){
   return tetCells(name, rot, x, y).every(([cx, cy]) =>
     cx >= 0 && cx < T.W && cy < T.H && (cy < 0 || T.grid[cy][cx] === null));
 }
-function tetSpawn(T){
-  const name = T.queue.shift();
-  T.queue.push(tetBag(T));
+function tetSpawn(T, forced){
+  let name = forced;
+  if (!name){
+    name = T.queue.shift();
+    T.queue.push(tetBag(T));
+    T.holdUsed = false;
+  }
   T.piece = { name, rot: 0, x: 3, y: 0 };
   T.gravT = 0; T.lockT = 0;
   if (!tetFits(T, name, 0, 3, 0)){
@@ -759,6 +782,14 @@ function tetHardDrop(T){
   const p = T.piece;
   while (tetFits(T, p.name, p.rot, p.x, p.y + 1)){ p.y++; if (T.control === "human") T.score += 2; }
   tetLock(T);
+}
+function tetHold(T){
+  if (T.holdUsed) return;
+  const cur = T.piece.name;
+  const out = T.hold;
+  T.hold = cur;
+  tetSpawn(T, out);
+  T.holdUsed = true;
 }
 
 function planTet(T, name){
@@ -967,6 +998,7 @@ function newFusion(){
     cur: null,                   // {type:'p', pair} or {type:'t', piece}
     state: "spawn", timer: 0, gravT: 0, lockT: 0,
     chain: 0, maxChain: 0, score: 0, lines: 0,
+    hold: null, holdUsed: false,
     popping: [], clearingRows: [],
     fallSpeed: 700,
     das: {lt: 0, rt: 0},
@@ -992,9 +1024,13 @@ function fTetFits(F, name, rot, x, y){
     cx >= 0 && cx < F.W && cy < F.H && (cy < 0 || F.grid[cy][cx] === 0));
 }
 
-function fusionSpawn(F){
-  const item = F.queue.shift();
-  F.queue.push(fusionItem());
+function fusionSpawn(F, forced){
+  let item = forced;
+  if (!item){
+    item = F.queue.shift();
+    F.queue.push(fusionItem());
+    F.holdUsed = false;
+  }
   F.gravT = 0; F.lockT = 0;
   if (item.type === "p"){
     F.cur = { type: "p", pair: { x: 3, y: F.H - F.VIS, rot: 0, a: item.a, b: item.b } };
@@ -1050,6 +1086,16 @@ function fusionHardDrop(F){
     while (fTetFits(F, p.name, p.rot, p.x, p.y + 1)){ p.y++; F.score += 2; }
   }
   fusionLock(F);
+}
+function fusionHold(F){
+  if (F.holdUsed) return;
+  const cur = F.cur.type === "p"
+    ? { type: "p", a: F.cur.pair.a, b: F.cur.pair.b }
+    : { type: "t", name: F.cur.piece.name };
+  const out = F.hold;
+  F.hold = cur;
+  fusionSpawn(F, out);
+  F.holdUsed = true;
 }
 function fusionLock(F){
   if (F.cur.type === "p"){
@@ -1220,6 +1266,7 @@ function setupGame(){
   setupCanvas();
   updateHud();
   drawNext();
+  drawHold();
 }
 
 // =========================================================
@@ -1249,6 +1296,13 @@ function inputHardDrop(){
   else if (e.kind === "tet" && e.piece && !e.clearing.length) tetHardDrop(e);
   else if (e.kind === "fusion" && e.state === "fall" && e.cur) fusionHardDrop(e);
 }
+function inputHold(){
+  const e = playerEntity();
+  if (!e || gameOver || paused) return;
+  if (e.kind === "puyo" && e.state === "fall" && e.pair) puyoHold(e);
+  else if (e.kind === "tet" && e.piece && !e.clearing.length) tetHold(e);
+  else if (e.kind === "fusion" && e.state === "fall" && e.cur) fusionHold(e);
+}
 
 document.addEventListener("keydown", e => {
   if (["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key)) e.preventDefault();
@@ -1264,6 +1318,7 @@ document.addEventListener("keydown", e => {
     case " ": inputHardDrop(); break;
     case "ArrowUp": case "x": case "X": inputRotate(1); break;
     case "z": case "Z": inputRotate(-1); break;
+    case "Shift": case "c": case "C": inputHold(); break;
     case "p": case "P":
       paused = !paused;
       satanSay(paused ? "ひと休みじゃ" : "再開じゃ!", false);
@@ -1287,14 +1342,16 @@ bindTouch("tbL", () => inputMove("left"), () => keys.left = false);
 bindTouch("tbR", () => inputMove("right"), () => keys.right = false);
 bindTouch("tbD", () => keys.down = true, () => keys.down = false);
 bindTouch("tbHD", () => inputHardDrop());
+bindTouch("tbHold", () => inputHold());
 bindTouch("tbRotL", () => inputRotate(-1));
 bindTouch("tbRotR", () => inputRotate(1));
 
 // =========================================================
 //  描画
 // =========================================================
-const leftCv = $("leftCv"), rightCv = $("rightCv"), nextCv = $("nextCv");
-const lctx = leftCv.getContext("2d"), rctx = rightCv.getContext("2d"), nctx = nextCv.getContext("2d");
+const leftCv = $("leftCv"), rightCv = $("rightCv"), nextCv = $("nextCv"), holdCv = $("holdCv");
+const lctx = leftCv.getContext("2d"), rctx = rightCv.getContext("2d"),
+      nctx = nextCv.getContext("2d"), hctx = holdCv.getContext("2d");
 
 function setupCanvas(){
   if (mode === "fusion"){
@@ -1512,6 +1569,24 @@ function drawNext(){
   }
 }
 
+function drawHold(){
+  hctx.clearRect(0, 0, holdCv.width, holdCv.height);
+  const e = playerEntity();
+  if (!e || !e.hold) return;
+  hctx.globalAlpha = e.holdUsed ? 0.35 : 1;   // 使用済みの間は薄く表示
+  const h = e.hold;
+  if (e.kind === "puyo" || (e.kind === "fusion" && h.type === "p")){
+    drawPuyoBall(hctx, 16, 28, h.a, 24, false);
+    drawPuyoBall(hctx, 16, 4, h.b, 24, false);
+  } else {
+    const name = e.kind === "tet" ? h : h.name;
+    for (const [cx, cy] of TSHAPES[name][0]){
+      drawMino(hctx, 4 + cx * 12, 14 + cy * 12, 12, TCOLOR[name], false);
+    }
+  }
+  hctx.globalAlpha = 1;
+}
+
 function ojamaIcons(n){
   let rest = n;
   const big = Math.floor(rest / 30); rest %= 30;
@@ -1575,6 +1650,7 @@ function loop(t){
     }
   }
   // 描画
+  drawHold();
   if (mode === "fusion"){
     if (fus) drawFusionBoard(lctx, fus, 28);
   } else if (sideL){
