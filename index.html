@@ -902,6 +902,63 @@ function updateTetSide(T, dt){
 // =========================================================
 //  フュージョン (1人用 / 1盤面にぷよ+テトリミノ)
 // =========================================================
+// フュージョン用の重力: ぷよは1マスずつ落ちるが、
+// テトリミノブロックはつながった固まりのまま落ちる(バラバラに崩れない)
+function fusionCompact(F){
+  const W = F.W, H = F.H, g = F.grid;
+  let movedAny = false;
+  for (;;){
+    let moved = false;
+    // ぷよ(数値セル)は各マス独立に1段ずつ落下
+    for (let y = H - 2; y >= 0; y--){
+      for (let x = 0; x < W; x++){
+        const c = g[y][x];
+        if (typeof c === "number" && c !== 0 && g[y + 1][x] === 0){
+          g[y + 1][x] = c;
+          g[y][x] = 0;
+          moved = true;
+        }
+      }
+    }
+    // ブロック(文字列セル)は上下左右につながる固まり単位で、
+    // 全セルの真下が空いているときだけ1段落下
+    const seen = Array.from({length: H}, () => Array(W).fill(false));
+    for (let y = 0; y < H; y++){
+      for (let x = 0; x < W; x++){
+        if (typeof g[y][x] !== "string" || seen[y][x]) continue;
+        const cells = [], stack = [[x, y]];
+        seen[y][x] = true;
+        while (stack.length){
+          const [cx, cy] = stack.pop();
+          cells.push([cx, cy]);
+          for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+            if (!seen[ny][nx] && typeof g[ny][nx] === "string"){
+              seen[ny][nx] = true;
+              stack.push([nx, ny]);
+            }
+          }
+        }
+        const inComp = new Set(cells.map(([cx, cy]) => cy * W + cx));
+        const canFall = cells.every(([cx, cy]) =>
+          cy + 1 < H && (g[cy + 1][cx] === 0 || inComp.has((cy + 1) * W + cx)));
+        if (canFall){
+          cells.sort((a, b) => b[1] - a[1]);   // 下のセルから動かす
+          for (const [cx, cy] of cells){
+            g[cy + 1][cx] = g[cy][cx];
+            g[cy][cx] = 0;
+          }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+    movedAny = true;
+  }
+  return movedAny;
+}
+
 function newFusion(){
   const F = {
     kind: "fusion",
@@ -1055,7 +1112,7 @@ function updateFusion(F, dt){
     case "settle":
       F.timer -= dt;
       if (F.timer <= 0){
-        if (gridCompact(F.grid, F.W, F.H)){ F.timer = 50; break; }
+        if (fusionCompact(F)){ F.timer = 50; break; }
         // 1) 横1列そろったラインを消す
         const full = [];
         for (let y = fromRow; y < F.H; y++){
