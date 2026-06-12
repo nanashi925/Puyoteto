@@ -223,7 +223,7 @@
 <body>
 <h1>ぷよてと 〜魔王サタンの逆襲〜</h1>
 <div class="sub">ぷよぷよ × テトリスが1つになった!</div>
-<button id="muteBtn" title="掛け声の音声ON/OFF">🔊 声ON</button>
+<button id="muteBtn" title="掛け声: ぜんぶ/ひかえめ/OFF">🔊 声ぜんぶ</button>
 <button id="bgmBtn" title="BGMのON/OFF">🎵 曲ON</button>
 <audio id="bgm" src="bgm.mp3" loop preload="auto"></audio>
 
@@ -276,7 +276,7 @@
 </div>
 
 <div id="help">
-  ←→:移動 ↓:高速落下 スペース:ハードドロップ Z / ⟲:左回転 X・↑ / ⟳:右回転 C・Shift / 📦:ホールド P:ポーズ M:声ON/OFF<br>
+  ←→:移動 ↓:高速落下 スペース:ハードドロップ Z / ⟲:左回転 X・↑ / ⟳:右回転 C・Shift / 📦:ホールド P:ポーズ M:声(ぜんぶ/ひかえめ/OFF)<br>
   ぷよは4つつなげると消える/テトリミノは横1列そろえると消える。連鎖で大ダメージ!
 </div>
 
@@ -403,7 +403,8 @@ const rand = n => Math.floor(Math.random() * n);
 const pick = arr => arr[rand(arr.length)];
 
 // ---------- サタンのボイス ----------
-let voiceOn = true;
+// 2=ぜんぶ喋る / 1=ひかえめ(大事な場面だけ。BGMが小さくなる回数を減らす) / 0=OFF
+let voiceMode = 2;
 let jaVoice = null;
 function pickVoice(){
   const vs = speechSynthesis.getVoices();
@@ -414,7 +415,7 @@ if ("speechSynthesis" in window){
   speechSynthesis.onvoiceschanged = pickVoice;
 }
 function say(text){
-  if (!voiceOn || !("speechSynthesis" in window)) return;
+  if (voiceMode === 0 || !("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/[!!?? …]/g,""));
   if (jaVoice) u.voice = jaVoice;
@@ -436,7 +437,8 @@ function satanSay(text, speak = true, excite = false){
     f.classList.add("excited");
     setTimeout(() => f.classList.remove("excited"), 400);
   }
-  if (speak) say(text);
+  // 「ひかえめ」では盛り上がる場面(excite)だけ喋る。吹き出しは常に出す
+  if (speak && (voiceMode === 2 || (voiceMode === 1 && excite))) say(text);
 }
 
 const SATAN = {
@@ -456,9 +458,9 @@ const SATAN = {
 };
 
 $("muteBtn").onclick = () => {
-  voiceOn = !voiceOn;
-  $("muteBtn").textContent = voiceOn ? "🔊 声ON" : "🔇 声OFF";
-  if (!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
+  voiceMode = (voiceMode + 2) % 3;   // ぜんぶ → ひかえめ → OFF → ぜんぶ…
+  $("muteBtn").textContent = ["🔇 声OFF", "🔉 声ひかえめ", "🔊 声ぜんぶ"][voiceMode];
+  if (voiceMode === 0 && "speechSynthesis" in window) speechSynthesis.cancel();
 };
 
 // ---------- BGM (サタンの声とは別ミュート) ----------
