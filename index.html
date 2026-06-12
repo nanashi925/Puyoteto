@@ -1054,6 +1054,7 @@ function newFusion(){
     state: "spawn", timer: 0, gravT: 0, lockT: 0,
     chain: 0, maxChain: 0, score: 0, lines: 0,
     chainTimer: 0, chainLines: 0, // 連鎖継続ウィンドウと連鎖中のライン数
+    links: 0,                     // 連鎖中の「消した回数」(ぷよ消し・ライン消し共通の声の段階)
     hold: null, holdUsed: false,
     popping: [], clearingRows: [],
     fallSpeed: 700,
@@ -1249,6 +1250,7 @@ function fusionChainExpire(F, dt){
   if (F.chainTimer <= 0){
     F.chain = 0;
     F.chainLines = 0;
+    F.links = 0;
     $("chainShout").textContent = "";
   }
 }
@@ -1303,6 +1305,7 @@ function updateFusion(F, dt){
         const groups = gridFindGroups(F.grid, F.W, F.H, fromRow);
         if (groups.length){
           F.chain++;
+          F.links++;
           F.maxChain = Math.max(F.maxChain, F.chain);
           F.chainTimer = FUSION_CHAIN_WINDOW;
           const r = computePop(F.grid, F.W, F.H, fromRow, groups, F.chain);
@@ -1311,8 +1314,9 @@ function updateFusion(F, dt){
           F.popping = [...r.popSet];
           F.state = "pop";
           F.timer = 380;
-          const line = SATAN.chain[Math.min(F.chain - 1, SATAN.chain.length - 1)];
-          satanSay(line, true, F.chain >= 2);
+          // 声はぷよ消し・ライン消し共通の段階(ぷよ→テト→ぷよ…でも続く)
+          const line = SATAN.chain[Math.min(F.links - 1, SATAN.chain.length - 1)];
+          satanSay(line, true, F.links >= 2);
           fusionShout(F);
         } else {
           // 全消し
@@ -1335,11 +1339,14 @@ function updateFusion(F, dt){
         F.clearingRows = [];
         F.lines += n;
         F.chainLines += n;
+        F.links++;
         F.chainTimer = FUSION_CHAIN_WINDOW;
         F.score += ([0, 100, 300, 500, 800][n] || 800) * (1 + Math.floor(F.lines / 10) * 0.2);
         if (F.chain > 0) F.score += 200 * n;   // ミックス連鎖ボーナス
-        const shout = SATAN.tetris[Math.min(n, 4)];
-        if (shout) satanSay(shout, true, n >= 3);
+        // テトリス(4ライン)は「テトリスだ」、それ以外は連鎖の声の続き
+        const shout = n >= 4 ? SATAN.tetris[4]
+          : SATAN.chain[Math.min(F.links - 1, SATAN.chain.length - 1)];
+        if (shout) satanSay(shout, true, F.links >= 2 || n >= 3);
         if (n >= 4) $("chainShout").textContent = "テトリス!!";
         else fusionShout(F);
         F.state = "settle";
