@@ -1770,13 +1770,14 @@ function loop(t){
   if (running && !paused && !gameOver){
     elapsed += dt;
     if (mode === "fusion"){
-      fus.fallSpeed = Math.max(200, 700 - elapsed / 350 - fus.lines * 8);
+      // 加速はかなりマイルドに: 1分あたり約40ms短縮、下限450ms(初速の1.55倍まで)
+      fus.fallSpeed = Math.max(450, 700 - elapsed / 1500 - fus.lines * 2);
       updateFusion(fus, dt);
       if (!fus.alive) endGame(null);
     } else {
-      const speedup = Math.max(0, elapsed / 400);
+      const speedup = Math.max(0, elapsed / 1500);
       for (const e of [sideL, sideR]){
-        if (e.kind === "puyo") e.fallSpeed = Math.max(220, 700 - speedup);
+        if (e.kind === "puyo") e.fallSpeed = Math.max(450, 700 - speedup);
       }
       updateEntity(sideL, dt);
       updateEntity(sideR, dt);
