@@ -1046,11 +1046,14 @@ function fusionCompact(F){
 function newFusion(){
   const F = {
     kind: "fusion",
-    W: 8, H: 16, VIS: 14,        // 先頭2行は隠し
+    W: 8, H: 17, VIS: 15,        // 本家ぷよテトミックスは 8×17。先頭2行は隠し
     grid: null, queue: [],
     cur: null,                   // {type:'p', pair} or {type:'t', piece}
+    seq: 0,                      // ツモ順: ぷよ4ターン→テトリミノ4ターンの交代制
+    crushed: [],                 // 落下中のミノが潰したぷよ [列, 色](潰した順=元の上から順)
     state: "spawn", timer: 0, gravT: 0, lockT: 0,
     chain: 0, maxChain: 0, score: 0, lines: 0,
+    chainTimer: 0, chainLines: 0, // 連鎖継続ウィンドウと連鎖中のライン数
     hold: null, holdUsed: false,
     popping: [], clearingRows: [],
     fallSpeed: 700,
@@ -1058,11 +1061,13 @@ function newFusion(){
     alive: true,
   };
   F.grid = Array.from({length: F.H}, () => Array(F.W).fill(0));
-  F.queue = [fusionItem(), fusionItem()];
+  F.queue = [fusionItem(F), fusionItem(F)];
   return F;
 }
-function fusionItem(){
-  return Math.random() < 0.62
+// 本家ルール: ぷよが4ターン出たら次はテトリミノが4ターンの交代制
+function fusionItem(F){
+  const turn = F.seq++;
+  return (Math.floor(turn / 4) % 2 === 0)
     ? { type: "p", a: 1 + rand(4), b: 1 + rand(4) }
     : { type: "t", name: TNAMES[rand(TNAMES.length)] };
 }
@@ -1076,22 +1081,59 @@ function fTetFits(F, name, rot, x, y){
   return tetCells(name, rot, x, y).every(([cx, cy]) =>
     cx >= 0 && cx < F.W && cy < F.H && (cy < 0 || F.grid[cy][cx] === 0));
 }
+// 下方向の判定: テトリミノはぷよの上に乗れず潰して沈むので、
+// 障害物はブロック(文字列セル)と床だけ
+function fTetFitsDown(F, name, rot, x, y){
+  return tetCells(name, rot, x, y).every(([cx, cy]) =>
+    cx >= 0 && cx < F.W && cy < F.H && (cy < 0 || typeof F.grid[cy][cx] !== "string"));
+}
+// 現在のミノが重なったぷよを潰す(列と色を覚えておき、着地後に上から降らせる)
+function fusionCrush(F){
+  const p = F.cur.piece;
+  for (const [cx, cy] of tetCells(p.name, p.rot, p.x, p.y)){
+    if (cy >= 0 && cy < F.H && typeof F.grid[cy][cx] === "number" && F.grid[cy][cx] !== 0){
+      F.crushed.push([cx, F.grid[cy][cx]]);
+      F.grid[cy][cx] = 0;
+    }
+  }
+}
+// 潰したぷよをその列の上から、元の並び順のまま降らせる(settle の重力で落ちてくる)
+function fusionReleaseCrushed(F){
+  const byCol = new Map();
+  for (const [cx, c] of F.crushed){
+    if (!byCol.has(cx)) byCol.set(cx, []);
+    byCol.get(cx).push(c);
+  }
+  for (const [cx, list] of byCol){
+    let y = 0;
+    for (const c of list){
+      while (y < F.H && F.grid[y][cx] !== 0) y++;
+      if (y >= F.H) break;
+      F.grid[y][cx] = c;
+      y++;
+    }
+  }
+  F.crushed = [];
+}
 
 function fusionSpawn(F, forced){
   let item = forced;
   if (!item){
     item = F.queue.shift();
-    F.queue.push(fusionItem());
+    F.queue.push(fusionItem(F));
     F.holdUsed = false;
   }
   F.gravT = 0; F.lockT = 0;
+  F.crushed = [];
   if (item.type === "p"){
     F.cur = { type: "p", pair: { x: 3, y: F.H - F.VIS, rot: 0, a: item.a, b: item.b } };
     if (!fPairFits(F, F.cur.pair)){ F.alive = false; return; }
   } else {
     F.cur = { type: "t", piece: { name: item.name, rot: 0, x: 2, y: 0 } };
     const p = F.cur.piece;
-    if (!fTetFits(F, p.name, p.rot, p.x, p.y)){ F.alive = false; return; }
+    // ミノはぷよを潰せるので、ブロックでふさがれている時だけゲームオーバー
+    if (!fTetFitsDown(F, p.name, p.rot, p.x, p.y)){ F.alive = false; return; }
+    fusionCrush(F);
   }
   F.state = "fall";
   drawNext();
@@ -1136,12 +1178,26 @@ function fusionHardDrop(F){
     while (fPairFits(F, {...p, y: p.y + 1})) p.y++;
   } else {
     const p = F.cur.piece;
-    while (fTetFits(F, p.name, p.rot, p.x, p.y + 1)){ p.y++; F.score += 2; }
+    while (fTetFitsDown(F, p.name, p.rot, p.x, p.y + 1)){
+      p.y++;
+      fusionCrush(F);
+      F.score += 2;
+    }
   }
   fusionLock(F);
 }
 function fusionHold(F){
   if (F.holdUsed) return;
+  // 潰しかけのぷよがいたら、先に各列の積みの上へ戻す(順序維持)
+  if (F.crushed.length){
+    for (let i = F.crushed.length - 1; i >= 0; i--){
+      const [cx, c] = F.crushed[i];
+      let y = F.H - 1;
+      while (y >= 0 && F.grid[y][cx] !== 0) y--;
+      if (y >= 0) F.grid[y][cx] = c;
+    }
+    F.crushed = [];
+  }
   const cur = F.cur.type === "p"
     ? { type: "p", a: F.cur.pair.a, b: F.cur.pair.b }
     : { type: "t", name: F.cur.piece.name };
@@ -1160,9 +1216,9 @@ function fusionLock(F){
     for (const [cx, cy] of tetCells(p.name, p.rot, p.x, p.y)){
       if (cy >= 0) F.grid[cy][cx] = p.name;
     }
+    fusionReleaseCrushed(F);   // 潰したぷよが上から降ってくる
   }
   F.cur = null;
-  F.chain = 0;
   F.state = "settle";
   F.timer = 60;
 }
@@ -1170,15 +1226,35 @@ function fusionLock(F){
 function fusionCanFall(F){
   if (F.cur.type === "p") return fPairFits(F, {...F.cur.pair, y: F.cur.pair.y + 1});
   const p = F.cur.piece;
-  return fTetFits(F, p.name, p.rot, p.x, p.y + 1);
+  return fTetFitsDown(F, p.name, p.rot, p.x, p.y + 1);
 }
 function fusionFall(F){
   if (F.cur.type === "p") F.cur.pair.y++;
-  else F.cur.piece.y++;
+  else { F.cur.piece.y++; fusionCrush(F); }
 }
 
+// 本家風: 連鎖表示が出ている一定時間内に新たに消せば連鎖がつながる
+const FUSION_CHAIN_WINDOW = 4500;
+function fusionShout(F){
+  const parts = [];
+  if (F.chain >= 1) parts.push(`${F.chain}連鎖`);
+  if (F.chainLines >= 1) parts.push(`${F.chainLines}ライン`);
+  $("chainShout").textContent =
+    (F.chain + F.chainLines >= 2 || (F.chain >= 1 && F.chainLines >= 1))
+      ? parts.join(" + ") + "!!" : "";
+}
+function fusionChainExpire(F, dt){
+  if (F.chainTimer <= 0) return;
+  F.chainTimer -= dt;
+  if (F.chainTimer <= 0){
+    F.chain = 0;
+    F.chainLines = 0;
+    $("chainShout").textContent = "";
+  }
+}
 function updateFusion(F, dt){
   const fromRow = F.H - F.VIS;
+  if (F.state === "fall" || F.state === "spawn") fusionChainExpire(F, dt);
   switch (F.state){
     case "spawn":
       fusionSpawn(F);
@@ -1228,20 +1304,22 @@ function updateFusion(F, dt){
         if (groups.length){
           F.chain++;
           F.maxChain = Math.max(F.maxChain, F.chain);
+          F.chainTimer = FUSION_CHAIN_WINDOW;
           const r = computePop(F.grid, F.W, F.H, fromRow, groups, F.chain);
           F.score += r.pts;
+          if (F.chainLines > 0) F.score += 200 * F.chain;   // ミックス連鎖ボーナス
           F.popping = [...r.popSet];
           F.state = "pop";
           F.timer = 380;
           const line = SATAN.chain[Math.min(F.chain - 1, SATAN.chain.length - 1)];
           satanSay(line, true, F.chain >= 2);
-          $("chainShout").textContent = F.chain >= 2 ? `${F.chain}連鎖!!` : "";
+          fusionShout(F);
         } else {
           // 全消し
           if (F.grid.every(row => row.every(c => c === 0)) && (F.chain > 0 || F.lines > 0)){
             if (F.chain > 0){ F.score += 2000; satanSay(pick(SATAN.zenkeshi), true, true); }
           }
-          $("chainShout").textContent = "";
+          // 連鎖はここでは切らない: 表示が残っている間に消せばつながる(本家風)
           F.state = "spawn";
           updateHud();
         }
@@ -1256,10 +1334,14 @@ function updateFusion(F, dt){
         }
         F.clearingRows = [];
         F.lines += n;
+        F.chainLines += n;
+        F.chainTimer = FUSION_CHAIN_WINDOW;
         F.score += ([0, 100, 300, 500, 800][n] || 800) * (1 + Math.floor(F.lines / 10) * 0.2);
+        if (F.chain > 0) F.score += 200 * n;   // ミックス連鎖ボーナス
         const shout = SATAN.tetris[Math.min(n, 4)];
         if (shout) satanSay(shout, true, n >= 3);
-        if (n >= 2) $("chainShout").textContent = n >= 4 ? "テトリス!!" : `${n}ライン!`;
+        if (n >= 4) $("chainShout").textContent = "テトリス!!";
+        else fusionShout(F);
         F.state = "settle";
         F.timer = 60;
         updateHud();
