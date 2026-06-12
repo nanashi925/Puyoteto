@@ -941,82 +941,106 @@ function updateTetSide(T, dt){
 // ・ぷよは1マスずつ下に落ちる
 // ・テトリミノブロックはつながった固まりのまま、ぷよより重いので
 //   ぷよを押しのけて盤面の下へ沈んでいく(押しのけられたぷよはブロックの上へ)
+// フュージョン用の重力(1呼び出し = 1ステップ)。何か動いたら true。
+// ・ぷよは1マスずつ下に落ちる
+// ・テトリミノブロックは固まり単位で、真下のぷよと入れ替わりながら
+//   床に着くまで1段ずつ沈んでいく(ぷよより重い)
+// ・どれも動けなくなったら、ブロックの下に閉じ込められたままのぷよを
+//   列ごとにブロックの上へ押し出す(ぷよはブロックより軽いので浮く)
 function fusionCompact(F){
   const W = F.W, H = F.H, g = F.grid;
-  let movedAny = false;
-  for (;;){
-    let moved = false;
-    // ぷよ(数値セル)は各マス独立に1段ずつ落下
-    for (let y = H - 2; y >= 0; y--){
-      for (let x = 0; x < W; x++){
-        const c = g[y][x];
-        if (typeof c === "number" && c !== 0 && g[y + 1][x] === 0){
-          g[y + 1][x] = c;
-          g[y][x] = 0;
-          moved = true;
-        }
+  let moved = false;
+  // ぷよ(数値セル)は各マス独立に1段落下
+  for (let y = H - 2; y >= 0; y--){
+    for (let x = 0; x < W; x++){
+      const c = g[y][x];
+      if (typeof c === "number" && c !== 0 && g[y + 1][x] === 0){
+        g[y + 1][x] = c;
+        g[y][x] = 0;
+        moved = true;
       }
     }
-    // ブロック(文字列セル)は固まり単位で1段沈む。
-    // 床か他のブロック(=同じ固まりに連結)に着くまで、下のぷよと入れ替わりながら沈む
-    const seen = Array.from({length: H}, () => Array(W).fill(false));
-    for (let y = 0; y < H; y++){
-      for (let x = 0; x < W; x++){
-        if (typeof g[y][x] !== "string" || seen[y][x]) continue;
-        const cells = [], stack = [[x, y]];
-        seen[y][x] = true;
-        while (stack.length){
-          const [cx, cy] = stack.pop();
-          cells.push([cx, cy]);
-          for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-            const nx = cx + dx, ny = cy + dy;
-            if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
-            if (!seen[ny][nx] && typeof g[ny][nx] === "string"){
-              seen[ny][nx] = true;
-              stack.push([nx, ny]);
-            }
-          }
-        }
-        const inComp = new Set(cells.map(([cx, cy]) => cy * W + cx));
-        // 列ごとの最下セルが床に着いていなければ沈める(真下のぷよは押しのける)
-        const cols = new Map();
-        for (const [cx, cy] of cells){
-          if (!cols.has(cx)) cols.set(cx, []);
-          cols.get(cx).push(cy);
-        }
-        let can = true;
-        for (const [cx, ys] of cols){
-          if (Math.max(...ys) + 1 >= H){ can = false; break; }
-        }
-        if (can){
-          for (const [cx, ys] of cols){
-            ys.sort((a, b) => a - b);
-            const displaced = [];
-            for (let i = ys.length - 1; i >= 0; i--){
-              const cy = ys[i];
-              if (!inComp.has((cy + 1) * W + cx) && g[cy + 1][cx] !== 0){
-                displaced.push(g[cy + 1][cx]);
-              }
-              g[cy + 1][cx] = g[cy][cx];
-              g[cy][cx] = 0;
-            }
-            // 押しのけたぷよは沈めて空いたセル(固まりの上側)へ
-            const vac = ys.filter(cy => g[cy][cx] === 0);
-            for (let k = 0; k < displaced.length; k++){
-              g[vac[vac.length - 1 - k]][cx] = displaced[k];
-            }
-          }
-          // 移動後のセルを処理済みにして、同じパスで固まりの一部だけが
-          // 再処理されて形が崩れるのを防ぐ
-          for (const [cx, cy] of cells) seen[cy + 1][cx] = true;
-          moved = true;
-        }
-      }
-    }
-    if (!moved) break;
-    movedAny = true;
   }
-  return movedAny;
+  // ブロック(文字列セル)は固まり単位で1段沈む
+  const seen = Array.from({length: H}, () => Array(W).fill(false));
+  for (let y = 0; y < H; y++){
+    for (let x = 0; x < W; x++){
+      if (typeof g[y][x] !== "string" || seen[y][x]) continue;
+      const cells = [], stack = [[x, y]];
+      seen[y][x] = true;
+      while (stack.length){
+        const [cx, cy] = stack.pop();
+        cells.push([cx, cy]);
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+          if (!seen[ny][nx] && typeof g[ny][nx] === "string"){
+            seen[ny][nx] = true;
+            stack.push([nx, ny]);
+          }
+        }
+      }
+      const inComp = new Set(cells.map(([cx, cy]) => cy * W + cx));
+      const cols = new Map();
+      for (const [cx, cy] of cells){
+        if (!cols.has(cx)) cols.set(cx, []);
+        cols.get(cx).push(cy);
+      }
+      let can = true;
+      for (const [cx, ys] of cols){
+        if (Math.max(...ys) + 1 >= H){ can = false; break; }
+      }
+      if (can){
+        for (const [cx, ys] of cols){
+          ys.sort((a, b) => a - b);
+          const displaced = [];
+          for (let i = ys.length - 1; i >= 0; i--){
+            const cy = ys[i];
+            if (!inComp.has((cy + 1) * W + cx) && g[cy + 1][cx] !== 0){
+              displaced.push(g[cy + 1][cx]);
+            }
+            g[cy + 1][cx] = g[cy][cx];
+            g[cy][cx] = 0;
+          }
+          // 押しのけたぷよは沈めて空いたセル(固まりの上側)へ
+          const vac = ys.filter(cy => g[cy][cx] === 0);
+          for (let k = 0; k < displaced.length; k++){
+            g[vac[vac.length - 1 - k]][cx] = displaced[k];
+          }
+        }
+        // 移動後のセルを処理済みにして、同じパスで固まりの一部だけが
+        // 再処理されて形が崩れるのを防ぐ
+        for (const [cx, cy] of cells) seen[cy + 1][cx] = true;
+        moved = true;
+      }
+    }
+  }
+  if (moved) return true;
+  // 沈み終わり: ブロックの下(同じ列)に残ったぷよをブロックの上へ押し出す
+  for (let x = 0; x < W; x++){
+    let topBlock = -1;
+    for (let y = 0; y < H; y++){
+      if (typeof g[y][x] === "string"){ topBlock = y; break; }
+    }
+    if (topBlock < 0) continue;
+    const trapped = [];
+    for (let y = topBlock + 1; y < H; y++){
+      if (typeof g[y][x] === "number" && g[y][x] !== 0){
+        trapped.push(g[y][x]);
+        g[y][x] = 0;
+      }
+    }
+    if (!trapped.length) continue;
+    let py = topBlock - 1;
+    while (py >= 0 && g[py][x] !== 0) py--;   // 既に乗っているぷよのさらに上へ
+    for (const c of trapped){
+      if (py < 0) break;
+      g[py][x] = c;
+      py--;
+    }
+    moved = true;
+  }
+  return moved;
 }
 
 function newFusion(){
@@ -1187,7 +1211,7 @@ function updateFusion(F, dt){
     case "settle":
       F.timer -= dt;
       if (F.timer <= 0){
-        if (fusionCompact(F)){ F.timer = 50; break; }
+        if (fusionCompact(F)){ F.timer = 90; break; }   // 1段ずつゆっくり沈む
         // 1) 横1列そろったラインを消す
         const full = [];
         for (let y = fromRow; y < F.H; y++){
