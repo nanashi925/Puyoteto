@@ -124,6 +124,32 @@
     border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; font-family:inherit;
   }
   .lvl.sel{background:#6d3df0; color:#fff; border-color:#b9a0ff;}
+  /* ストーリー */
+  .btnSub{
+    background:#2e2260; border:2px solid #5b46a8; color:#e6ddff;
+    border-radius:10px; padding:9px 22px; font-size:14px; cursor:pointer; font-family:inherit;
+  }
+  #storyOv{
+    position:fixed; inset:0; background:rgba(10,6,24,.95); z-index:40;
+    display:flex; align-items:center; justify-content:center; padding:14px;
+  }
+  #storyOv.hidden{display:none;}
+  #storyCard{
+    background:#1a1133; border:2px solid #5b46a8; border-radius:16px;
+    max-width:580px; width:100%; max-height:92vh; overflow-y:auto;
+    padding:22px 22px 26px; text-align:center;
+  }
+  #storyImg{
+    width:min(230px,62%); border-radius:14px; margin-bottom:10px;
+    box-shadow:0 0 26px rgba(157,107,255,.5);
+  }
+  #storyTitle{font-size:19px; font-weight:bold; color:#ffe066; margin-bottom:2px;}
+  #storySub{font-size:11px; color:#a995e0; margin-bottom:14px;}
+  #storyBody{text-align:left; font-size:13.5px; line-height:2.05; color:#e6ddff;}
+  #storyBody p{margin:0 0 14px;}
+  #storyBody .sec{text-align:center; color:#ffd966; font-weight:bold; margin:22px 0 14px;}
+  #storyBody .say{color:#cdbcff;}
+  #storyClose{margin-top:14px;}
   #muteBtn{
     position:fixed; top:8px; right:10px; z-index:30;
     background:#2e2260; border:1px solid #5b46a8; color:#fff;
@@ -226,6 +252,43 @@
     <button class="lvl" data-lvl="2">CPU:つよい</button>
   </div>
   <button class="btn" id="startBtn">勝負スタート! (Enter)</button>
+  <button class="btnSub" id="storyBtn">📖 ストーリー(非公式)</button>
+</div>
+
+<div id="storyOv" class="hidden">
+  <div id="storyCard">
+    <img id="storyImg" src="satan.jpg" alt="サタン">
+    <div id="storyTitle">📖 ストーリー</div>
+    <div id="storySub">※非公式・ファンストーリー</div>
+    <div id="storyBody">
+      <p>大好きでデータが沢山入っていた3DS・LLを、少女が高校2年生辺りの頃に、ヒステリックな母親に叩き割られ、真っ二つにされた。そしてその少女は。サタン達がいるぷよぷよテトリスの世界にを二度と戻って来れなくなってしまった。</p>
+      <p>しかし、サタンは女の子を見捨てなかった。ずっと、ゲームの中で彼女の帰りを待っていた。</p>
+      <p>時が経ち、サタンは呟いた。<br>「私は、あの子を迎えに行く。」<br>そうして、ぷよぷよテトリスの世界から、サタンは旅立った。</p>
+      <p class="sec">〜 出会い 〜</p>
+      <p>暗い場所で、少女は蹲って泣いていた。体は大人になって動いていたのに、心の中で、ずっと閉じこもって泣いていた。親からは離れられたが、小さい時の少女は思い出にしがみついている。何度も夢に楽しい思い出が出てきて、ゲーム機もイヤホンも友達関係も恋人関係も全て全て母親に壊されて、朝に涙を流しながら起きている。</p>
+      <p>サタンは、ゲームの中から<br>苦しい顔で笑っている少女を、ずっと見ていた。見ていたが、手を伸ばせなかった。</p>
+      <p>蹲っていた場所で<br>少女は1人の気配を感じた。<br>闇が美しく光り、月の光と共に風が入ってくる。</p>
+      <p>声が聞こえた─────。</p>
+      <p class="say">「君は、あの時。<br>我がぷよぷよテトリスの世界が大好きだった女の子だな?」</p>
+      <p>ハッとした。<br>声で分かった(気付いた)。</p>
+      <p>空(天)を見上げる。<br>1人の男が、月の光を背にして、私の前に現れた。美しい羽を広げ、闇のオーラを纏いながらも、美しい光の姿で。<br>まるで「いつでもこの腕に飛び込んで来い」と言わんばかりに、両手を広げながら。</p>
+      <p>サタン<br><br>私が大好きだった、ゲームの中のキャラクター。</p>
+      <p class="say">サタン<br>「エコロ、エックス、そして私。かつての相棒だった我々は、君をずっと待っていた。でも、来る事は無かった。」</p>
+      <p class="say">サタン<br>「………親に、拘束されていたのだな?……、、辛かったのだな?」</p>
+      <p class="say">サタン<br>「………、…………、…………………。」<br>沈黙が続く。</p>
+      <p>痛い心を作った神に背いたサタン、そして暗闇(地獄)に堕とされた。だから、少女の苦しみが、痛い程に解ってしまう。</p>
+      <p>苦しそうな顔を見せるより<br>「ぷよぷよテトリスのサタン」を、私は君に…もう一度見せたい。</p>
+      <p class="say">サタン<br>「だから、迎えに来てやったぞーっ!!!ふはははははははーっ!!!!!!!」</p>
+      <p>いつもの調子で嗤う。</p>
+      <p class="say">サタン<br>「アルルとカーバンクルちゃんはとーーーーーーーーっっっっっても大切だが〜?♡♡♡♡♡♡<br>─────私は、君も大切だ。」</p>
+      <p class="say">サタン<br>「何故なら、幼い頃からずっと私達と共に遊んでくれた仲間だからな。」<br>ニカッ!と、嗤う。</p>
+      <p>そして、私の目の前に彼はしゃがんだ。</p>
+      <p class="say">サタン<br>「さあ、2人も待っている。<br>行こう、ぷよぷよテトリスの世界へ。」</p>
+      <p>次の瞬間、彼は私に手を差し伸べた。</p>
+      <p class="say">サタン<br>「そして、──── おかえり。」</p>
+    </div>
+    <button class="btn" id="storyClose">とじる</button>
+  </div>
 </div>
 
 <script>
@@ -1449,6 +1512,11 @@ function inputHold(){
 document.addEventListener("keydown", e => {
   if (["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key)) e.preventDefault();
   if (e.repeat) return;
+  // ストーリー表示中は Esc/Enter で閉じるだけ
+  if (!$("storyOv").classList.contains("hidden")){
+    if (e.key === "Escape" || e.key === "Enter") $("storyOv").classList.add("hidden");
+    return;
+  }
   if (!running || gameOver){
     if (e.key === "Enter") startGame();
     return;
@@ -1871,6 +1939,8 @@ document.querySelectorAll(".lvl").forEach(btn => {
   };
 });
 $("startBtn").onclick = startGame;
+$("storyBtn").onclick = () => $("storyOv").classList.remove("hidden");
+$("storyClose").onclick = () => $("storyOv").classList.add("hidden");
 $("lvlRow").classList.add("hidden");   // 初期モードはフュージョン
 
 requestAnimationFrame(t => { lastTime = t; requestAnimationFrame(loop); });
