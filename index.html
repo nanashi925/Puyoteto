@@ -6,20 +6,47 @@
 <title>ぷよてと 〜魔王サタンの逆襲〜</title>
 <style>
   :root{
-    --bg:#1a1230;
-    --panel:#241a44;
+    --bg:#0d0726;
+    --panel:#1d1340;
     --accent:#8b5cf6;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
   body{
-    background: radial-gradient(ellipse at 50% 0%, #2d1f5e 0%, var(--bg) 70%);
+    background: radial-gradient(ellipse at 50% -10%, #3b2a6e 0%, #1d1244 38%, var(--bg) 72%, #070313 100%);
     color:#eee;
     font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
     display:flex; flex-direction:column; align-items:center;
     overflow-x:hidden;
     -webkit-user-select:none; user-select:none;
     touch-action:manipulation;
+  }
+  /* 夜空: 星 */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:-2; pointer-events:none;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.9), transparent),
+      radial-gradient(1px 1px at 28% 42%, rgba(255,255,255,.55), transparent),
+      radial-gradient(2px 2px at 41% 12%, rgba(214,200,255,.85), transparent),
+      radial-gradient(1px 1px at 55% 30%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1.5px 1.5px at 67% 8%, rgba(255,255,255,.85), transparent),
+      radial-gradient(1px 1px at 76% 38%, rgba(214,200,255,.6), transparent),
+      radial-gradient(2px 2px at 88% 22%, rgba(255,255,255,.75), transparent),
+      radial-gradient(1px 1px at 8% 64%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 33% 78%, rgba(214,200,255,.5), transparent),
+      radial-gradient(1px 1px at 62% 70%, rgba(255,255,255,.45), transparent),
+      radial-gradient(1.5px 1.5px at 83% 82%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1px 1px at 94% 56%, rgba(214,200,255,.5), transparent),
+      radial-gradient(1px 1px at 18% 90%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1.5px 1.5px at 48% 52%, rgba(255,255,255,.4), transparent);
+  }
+  /* 夜空: 月 */
+  body::after{
+    content:""; position:fixed; top:30px; right:5vw; z-index:-1; pointer-events:none;
+    width:120px; height:120px; border-radius:50%;
+    background:radial-gradient(circle at 38% 35%, #fffdf4, #f6e8c4 62%, #e6d0a0 100%);
+    box-shadow:0 0 60px 22px rgba(255,238,200,.16), 0 0 150px 80px rgba(157,107,255,.10);
+    opacity:.85;
   }
   h1{
     margin:10px 0 2px;
@@ -36,12 +63,12 @@
     flex-wrap:nowrap;
   }
   .side{
-    background:var(--panel);
+    background:rgba(24,15,52,.9);
     border:2px solid #4c3a8c;
     border-radius:12px;
     padding:8px;
     display:flex; flex-direction:column; align-items:center; gap:6px;
-    box-shadow:0 6px 24px rgba(0,0,0,.4);
+    box-shadow:0 6px 24px rgba(0,0,0,.5), 0 0 28px rgba(139,92,246,.18);
   }
   .side h2{font-size:13px; color:#d6c8ff; font-weight:600;}
   canvas{display:block; border-radius:6px; background:#0d0a1c;}
@@ -56,11 +83,15 @@
     width:120px;
   }
   #satanFace{
-    font-size:56px; line-height:1;
-    filter:drop-shadow(0 0 12px rgba(139,92,246,.8));
-    transition:transform .15s;
+    width:86px; height:86px; border-radius:50%; object-fit:cover;
+    border:2px solid #8b5cf6;
+    box-shadow:0 0 18px rgba(139,92,246,.75), 0 0 46px rgba(139,92,246,.3);
+    transition:transform .15s, box-shadow .15s;
   }
-  #satanFace.excited{transform:scale(1.25) rotate(-6deg);}
+  #satanFace.excited{
+    transform:scale(1.18) rotate(-6deg);
+    box-shadow:0 0 24px rgba(255,120,140,.85), 0 0 60px rgba(139,92,246,.5);
+  }
   #satanName{
     font-size:11px; font-weight:bold; color:#ffe066;
     background:#3a2a6e; border:1px solid #8b5cf6; border-radius:8px;
@@ -93,10 +124,16 @@
   #wins{font-size:12px; color:#cbbcf5; text-align:center;}
   /* オーバーレイ */
   #overlay{
-    position:fixed; inset:0; background:rgba(10,6,24,.88);
+    position:fixed; inset:0; background:rgba(7,3,19,.84);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:14px; z-index:20; text-align:center; padding:20px;
+    gap:12px; z-index:20; text-align:center; padding:20px;
   }
+  #titleSatan{
+    width:min(150px,34vw); height:min(150px,34vw); border-radius:50%; object-fit:cover;
+    border:3px solid #8b5cf6;
+    box-shadow:0 0 30px rgba(139,92,246,.65), 0 0 90px rgba(139,92,246,.25);
+  }
+  .subRow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
   #overlay.hidden{display:none;}
   #ovTitle{font-size:clamp(22px,6vw,38px); font-weight:bold; color:#ffe066; text-shadow:0 0 16px rgba(255,224,102,.5);}
   #ovMsg{font-size:14px; color:#d6c8ff; line-height:1.9;}
@@ -129,32 +166,42 @@
     background:#2e2260; border:2px solid #5b46a8; color:#e6ddff;
     border-radius:10px; padding:9px 22px; font-size:14px; cursor:pointer; font-family:inherit;
   }
-  #storyOv{
-    position:fixed; inset:0; background:rgba(10,6,24,.95); z-index:40;
+  #storyOv, #lyricsOv{
+    position:fixed; inset:0; background:rgba(7,3,19,.95); z-index:40;
     display:flex; align-items:center; justify-content:center; padding:14px;
   }
-  #storyOv.hidden{display:none;}
-  #storyCard{
-    background:#1a1133; border:2px solid #5b46a8; border-radius:16px;
+  #storyOv.hidden, #lyricsOv.hidden{display:none;}
+  #storyCard, #lyricsCard{
+    background:#160e30; border:2px solid #5b46a8; border-radius:16px;
     max-width:580px; width:100%; max-height:92vh; overflow-y:auto;
     padding:22px 22px 26px; text-align:center;
+    box-shadow:0 0 40px rgba(139,92,246,.25);
   }
-  #storyImg{
+  /* 歌詞: 女の子=月明かりの淡青 / サタン=紫 / ト書き=灰 */
+  #lyricsBody{text-align:left; font-size:13.5px; line-height:2.0;}
+  #lyricsBody p{margin:0 0 13px;}
+  .lyG{color:#bfe3ff;}
+  .lyS{color:#cdbcff;}
+  .lyQ{color:#9d92c5; font-style:italic;}
+  #lyricsClose{margin-top:14px;}
+  #storyImg, #lyricsImg{
     width:min(230px,62%); border-radius:14px; margin-bottom:10px;
     box-shadow:0 0 26px rgba(157,107,255,.5);
   }
-  #storyTitle{font-size:19px; font-weight:bold; color:#ffe066; margin-bottom:2px;}
-  #storySub{font-size:11px; color:#a995e0; margin-bottom:14px;}
+  #storyTitle, #lyricsTitle{font-size:19px; font-weight:bold; color:#ffe066; margin-bottom:2px;}
+  #storySub, #lyricsSub{font-size:11px; color:#a995e0; margin-bottom:14px;}
   #storyBody{text-align:left; font-size:13.5px; line-height:2.05; color:#e6ddff;}
   #storyBody p{margin:0 0 14px;}
   #storyBody .sec{text-align:center; color:#ffd966; font-weight:bold; margin:22px 0 14px;}
   #storyBody .say{color:#cdbcff;}
   #storyClose{margin-top:14px;}
-  #muteBtn{
-    position:fixed; top:8px; right:10px; z-index:30;
+  #muteBtn, #bgmBtn{
+    position:fixed; top:8px; z-index:30;
     background:#2e2260; border:1px solid #5b46a8; color:#fff;
     border-radius:8px; padding:5px 10px; font-size:14px; cursor:pointer;
   }
+  #muteBtn{right:10px;}
+  #bgmBtn{right:100px;}
   /* タッチ操作 */
   #touchPad{
     display:none;
@@ -173,7 +220,7 @@
     #arena{gap:6px;}
     #midCol{min-width:0; padding-top:10px;}
     #satanBox{width:90px;}
-    #satanFace{font-size:42px;}
+    #satanFace{width:62px; height:62px;}
   }
 </style>
 </head>
@@ -181,6 +228,8 @@
 <h1>ぷよてと 〜魔王サタンの逆襲〜</h1>
 <div class="sub">ぷよぷよ × テトリスが1つになった!</div>
 <button id="muteBtn" title="掛け声の音声ON/OFF">🔊 声ON</button>
+<button id="bgmBtn" title="BGMのON/OFF">🎵 曲ON</button>
+<audio id="bgm" src="bgm.mp3" loop preload="auto"></audio>
 
 <div id="arena">
   <!-- プレイヤー -->
@@ -195,7 +244,7 @@
   <div id="midCol">
     <div id="satanBox">
       <div id="bubble"></div>
-      <div id="satanFace">😈</div>
+      <img id="satanFace" src="satan.jpg" alt="サタン">
       <div id="satanName">魔王サタン</div>
     </div>
     <div id="chainShout"></div>
@@ -236,6 +285,7 @@
 </div>
 
 <div id="overlay">
+  <img id="titleSatan" src="satan.jpg" alt="サタン">
   <div id="ovTitle">ぷよてと</div>
   <div id="ovMsg">フハハハハ!我こそは魔王サタン!<br>ぷよとテトリミノ、両方を従えてみせよ!</div>
   <div class="modeCol" id="modeCol">
@@ -252,7 +302,56 @@
     <button class="lvl" data-lvl="2">CPU:つよい</button>
   </div>
   <button class="btn" id="startBtn">勝負スタート! (Enter)</button>
-  <button class="btnSub" id="storyBtn">📖 ストーリー(非公式)</button>
+  <div class="subRow">
+    <button class="btnSub" id="storyBtn">📖 ストーリー(非公式)</button>
+    <button class="btnSub" id="lyricsBtn">🎶 歌詞</button>
+  </div>
+</div>
+
+<div id="lyricsOv" class="hidden">
+  <div id="lyricsCard">
+    <img id="lyricsImg" src="satan.jpg" alt="サタン">
+    <div id="lyricsTitle">🎶 いいこじゃなくても</div>
+    <div id="lyricsSub">(demonic pact mix) ※非公式・オリジナルソング</div>
+    <div id="lyricsBody">
+      <p class="lyQ">女の子:(鼻をすする音)</p>
+      <p class="lyG">いきたいっていうかなしさを<br>ちいさなてのひらにのせた<br>しにたいっていうよろこびも<br>なくさないようにだきしめた<br>いたいのに　まだここにいて<br>くるしいのに　いきをして<br>ねえ　かみさま　みているの?<br>このこえは　そらまでいくの?</p>
+      <p class="lyQ">???:(笑い声)</p>
+      <p class="lyQ">女の子:(泣き声)</p>
+      <p class="lyS">???:<br>お腹の底が　真っ暗で?<br>涙もそこで　冷えていた?<br>誰かがくれた　「やさしさ」も<br>触ると直ぐに　割れていく</p>
+      <p><span class="lyS">???:「わらっていてね」って　言われたの?</span><br><span class="lyG">女の子:くるしいかおで…</span><br><span class="lyS">???:笑ったの?</span></p>
+      <p><span class="lyG">女の子:いいこにしたら</span><br><span class="lyS">???:救われる?</span></p>
+      <p class="lyG">女の子:<br>いいこじゃなくても　いきていい?</p>
+      <p class="lyS">???:<br>─── ならば私が助けてやろう。</p>
+      <p class="lyS">サタン:<br>どうして?どうして!「かみさま」は!!<br>闇(私)を全て消さなかったの?</p>
+      <p class="lyG">女の子:<br>ひかりがあれば　それだけで</p>
+      <p class="lyS">サタン:<br>「せかい」は綺麗に成るはずなのに…</p>
+      <p class="lyG">女の子:<br>どうして　どうして　わたしには</p>
+      <p class="lyS">サタン:<br>夜ばかりが長いのですか?</p>
+      <p><span class="lyG">女の子:やみはさいしょから</span><br><span class="lyS">サタン:あったのですか?</span></p>
+      <p><span class="lyG">女の子:それとも?</span><br><span class="lyS">サタン:あなた(主・ヤハウェ)が残したのですか?</span></p>
+      <p><span class="lyS">サタン:どうして?どうして!</span><br><span class="lyG">女の子:けさなかった?</span><br><span class="lyS">サタン:何故!!遺した?</span><br><span class="lyG">女の子:なぜ　こたえない。</span></p>
+      <p class="lyS">サタン:<br>始めにあったのは「天と地と、光」だったと聴いたけど。<br>光の前の暗い水?そこには誰がいたのですか?</p>
+      <p class="lyG">女の子:<br>ふちのおもてに　かぜがいて<br>かみさまだけが　しっていて</p>
+      <p class="lyS">サタン:<br>それでも闇を殺さずに、名前もつけずに置いたのですか。</p>
+      <p class="lyS">サタン:<br>光の国は世界より、前からあったんじゃないの?</p>
+      <p class="lyG">女の子:<br>だったらどうして　このむねは</p>
+      <p class="lyS">サタン:<br>こんなに暗くなるのですか。</p>
+      <p class="lyG">女の子:<br>ぜんちぜんのうの　おおきなて<br>わたしのきずに　ふれないの?</p>
+      <p><span class="lyS">サタン:「ちいさなこども」が</span><br><span class="lyG">女の子:ないている</span><br><span class="lyS">サタン:あなた(主・ヤハウェ)の前で</span><br><span class="lyG">女の子:ないている</span></p>
+      <p class="lyS">サタン:問え、恐れるな。その闇ごと…立て。</p>
+      <p class="lyS">サタン:<br>どうして?どうして!「かみさま」は闇を全て消さなかったの?</p>
+      <p><span class="lyG">女の子:ひかりがひかりで　あるために。</span><br><span class="lyS">サタン:私の夜が「要る(必要な)」のですか?…嗚呼!!!<br>どうして?どうして!「かみさま」は!!</span></p>
+      <p class="lyG">女の子:<br>いたいこころを　つくったの?</p>
+      <p><span class="lyS">サタン:それでも私が</span><br><span class="lyG">女の子:うたうなら</span><br><span class="lyS">サタン:貴方はそれ(悪の問題)を聴くのですか?</span></p>
+      <p><span class="lyS">サタン:問え!問え!!何故だ、何故だ!!!</span><br><span class="lyG">女の子:光のために</span><br><span class="lyS">サタン:夜を捧げるな。</span><br><span class="lyG">女の子:問え　問え</span><br><span class="lyS">サタン:奪われたまま</span><br><span class="lyG">女の子:祈るな……立て。</span></p>
+      <p><span class="lyG">女の子:いきたいっていうかなしさも</span><br><span class="lyS">サタン:死にたいっていう喜び(祝福)も</span><br><span class="lyG">女の子:ぜんぶぜんぶ　まとめてあげる</span><br><span class="lyS">サタン:「ちいさな」身体で?</span><br><span class="lyG">女の子:もっていく。</span><br><span class="lyS">サタン:「くるしいかおで　わらっていてね」</span><br><span class="lyG">女の子:わたしがわたしに?</span><br><span class="lyS">サタン:そう言った。</span></p>
+      <p><span class="lyG">女の子:ねえ　かみさま</span><br><span class="lyS">サタン:負けないよ。</span></p>
+      <p><span class="lyG">女の子:このやみごと</span><br><span class="lyS">サタン:貴方に聞くよ。</span></p>
+      <p><span class="lyG">女の子:その問いは?</span><br><span class="lyS">サタン:お前のものだ。</span></p>
+    </div>
+    <button class="btn" id="lyricsClose">とじる</button>
+  </div>
 </div>
 
 <div id="storyOv" class="hidden">
@@ -364,6 +463,24 @@ $("muteBtn").onclick = () => {
   $("muteBtn").textContent = voiceOn ? "🔊 声ON" : "🔇 声OFF";
   if (!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
 };
+
+// ---------- BGM (サタンの声とは別ミュート) ----------
+const bgm = $("bgm");
+bgm.volume = 0.45;
+let bgmOn = true;
+function tryStartBgm(){
+  if (!bgmOn || !bgm.paused) return;
+  bgm.play().catch(() => {});   // 自動再生がブロックされたら次の操作で再挑戦
+}
+$("bgmBtn").onclick = () => {
+  bgmOn = !bgmOn;
+  $("bgmBtn").textContent = bgmOn ? "🎵 曲ON" : "🎵 曲OFF";
+  if (bgmOn) tryStartBgm();
+  else bgm.pause();
+};
+tryStartBgm();   // ページを開いた時点で再生を試みる(最初から流れるように)
+document.addEventListener("pointerdown", tryStartBgm);
+document.addEventListener("keydown", tryStartBgm);
 
 // ---------- 全体状態 ----------
 let mode = "fusion";
@@ -1512,10 +1629,13 @@ function inputHold(){
 document.addEventListener("keydown", e => {
   if (["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key)) e.preventDefault();
   if (e.repeat) return;
-  // ストーリー表示中は Esc/Enter で閉じるだけ
-  if (!$("storyOv").classList.contains("hidden")){
-    if (e.key === "Escape" || e.key === "Enter") $("storyOv").classList.add("hidden");
-    return;
+  // ストーリー/歌詞の表示中は Esc/Enter で閉じるだけ
+  for (const ovId of ["storyOv", "lyricsOv"]){
+    const ov = $(ovId);
+    if (!ov.classList.contains("hidden")){
+      if (e.key === "Escape" || e.key === "Enter") ov.classList.add("hidden");
+      return;
+    }
   }
   if (!running || gameOver){
     if (e.key === "Enter") startGame();
@@ -1941,6 +2061,8 @@ document.querySelectorAll(".lvl").forEach(btn => {
 $("startBtn").onclick = startGame;
 $("storyBtn").onclick = () => $("storyOv").classList.remove("hidden");
 $("storyClose").onclick = () => $("storyOv").classList.add("hidden");
+$("lyricsBtn").onclick = () => $("lyricsOv").classList.remove("hidden");
+$("lyricsClose").onclick = () => $("lyricsOv").classList.add("hidden");
 $("lvlRow").classList.add("hidden");   // 初期モードはフュージョン
 
 requestAnimationFrame(t => { lastTime = t; requestAnimationFrame(loop); });
