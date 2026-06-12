@@ -1288,10 +1288,10 @@ function updateFusion(F, dt){
       F.timer -= dt;
       if (F.timer <= 0){
         if (fusionCompact(F)){ F.timer = 90; break; }   // 1段ずつゆっくり沈む
-        // 1) 横1列そろったラインを消す
+        // 1) ブロックだけで横1列そろったラインを消す(ぷよが混ざった列は消えない=本家仕様)
         const full = [];
         for (let y = fromRow; y < F.H; y++){
-          if (F.grid[y].every(c => c !== 0)) full.push(y);
+          if (F.grid[y].every(c => typeof c === "string")) full.push(y);
         }
         if (full.length){
           F.clearingRows = full;
