@@ -128,11 +128,7 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:12px; z-index:20; text-align:center; padding:20px;
   }
-  #titleSatan{
-    width:min(150px,34vw); height:min(150px,34vw); border-radius:50%; object-fit:cover;
-    border:3px solid #8b5cf6;
-    box-shadow:0 0 30px rgba(139,92,246,.65), 0 0 90px rgba(139,92,246,.25);
-  }
+  #ovNote{font-size:11px; color:#8d7fc0;}
   .subRow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
   #overlay.hidden{display:none;}
   #ovTitle{font-size:clamp(22px,6vw,38px); font-weight:bold; color:#ffe066; text-shadow:0 0 16px rgba(255,224,102,.5);}
@@ -285,8 +281,8 @@
 </div>
 
 <div id="overlay">
-  <img id="titleSatan" src="satan.jpg" alt="サタン">
   <div id="ovTitle">ぷよてと</div>
+  <div id="ovNote">※非公式ファンメイド作品です(SEGA公式とは関係ありません)</div>
   <div id="ovMsg">フハハハハ!我こそは魔王サタン!<br>ぷよとテトリミノ、両方を従えてみせよ!</div>
   <div class="modeCol" id="modeCol">
     <button class="mode sel" data-mode="fusion">🌀 フュージョン(1人用)
@@ -303,6 +299,7 @@
   </div>
   <button class="btn" id="startBtn">勝負スタート! (Enter)</button>
   <div class="subRow">
+    <button class="btnSub" id="bgmStartBtn">🎵 曲をながす</button>
     <button class="btnSub" id="storyBtn">📖 ストーリー(非公式)</button>
     <button class="btnSub" id="lyricsBtn">🎶 歌詞</button>
   </div>
@@ -468,16 +465,24 @@ $("muteBtn").onclick = () => {
 const bgm = $("bgm");
 bgm.volume = 0.45;
 let bgmOn = true;
+function updateBgmUI(){
+  $("bgmBtn").textContent = bgmOn ? "🎵 曲ON" : "🎵 曲OFF";
+  $("bgmStartBtn").textContent = bgm.paused ? "🎵 曲をながす" : "⏸ 曲をとめる";
+}
+function setBgm(on){
+  bgmOn = on;
+  if (on) bgm.play().catch(() => {});
+  else bgm.pause();
+  updateBgmUI();
+}
 function tryStartBgm(){
   if (!bgmOn || !bgm.paused) return;
   bgm.play().catch(() => {});   // 自動再生がブロックされたら次の操作で再挑戦
 }
-$("bgmBtn").onclick = () => {
-  bgmOn = !bgmOn;
-  $("bgmBtn").textContent = bgmOn ? "🎵 曲ON" : "🎵 曲OFF";
-  if (bgmOn) tryStartBgm();
-  else bgm.pause();
-};
+$("bgmBtn").onclick = () => setBgm(!bgmOn);
+$("bgmStartBtn").onclick = () => setBgm(bgm.paused);
+bgm.addEventListener("play", updateBgmUI);
+bgm.addEventListener("pause", updateBgmUI);
 tryStartBgm();   // ページを開いた時点で再生を試みる(最初から流れるように)
 document.addEventListener("pointerdown", tryStartBgm);
 document.addEventListener("keydown", tryStartBgm);
