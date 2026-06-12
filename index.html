@@ -377,7 +377,8 @@ function gridFindGroups(grid, W, H, fromRow){
   return groups;
 }
 
-// 消去対象と得点を計算 (おじゃま・ブロックの巻き込み含む)
+// 消去対象と得点を計算 (おじゃまぷよの巻き込み含む。テトリミノブロックは
+// ぷよ消しでは消えない: ブロックはライン消しでのみ消える=本家仕様)
 function computePop(grid, W, H, fromRow, groups, chain){
   let cleared = 0;
   const colors = new Set();
@@ -394,8 +395,7 @@ function computePop(grid, W, H, fromRow, groups, chain){
       for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
         const nx = x + dx, ny = y + dy;
         if (nx < 0 || nx >= W || ny < fromRow || ny >= H) continue;
-        const c = grid[ny][nx];
-        if (c === OJAMA || typeof c === "string") popSet.add(ny * W + nx);
+        if (grid[ny][nx] === OJAMA) popSet.add(ny * W + nx);
       }
     }
   }
