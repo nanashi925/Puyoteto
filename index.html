@@ -133,41 +133,68 @@
   #midCol{display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:30px; min-width:130px;}
   #vsMark{font-size:26px; font-weight:bold; color:#8b5cf6; text-shadow:0 0 10px #8b5cf6;}
   #wins{font-size:12px; color:#cbbcf5; text-align:center;}
-  /* オーバーレイ */
+  /* オーバーレイ(タイトル画面): 不透明な星空 */
   #overlay{
-    position:fixed; inset:0; background:rgba(7,3,19,.84);
+    position:fixed; inset:0; z-index:20; overflow-y:auto;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:12px; z-index:20; text-align:center; padding:20px;
+    gap:13px; text-align:center; padding:24px 18px;
+    background:
+      radial-gradient(1.5px 1.5px at 15% 18%, rgba(255,255,255,.85), transparent),
+      radial-gradient(1px 1px at 68% 10%, rgba(255,255,255,.6), transparent),
+      radial-gradient(2px 2px at 86% 26%, rgba(214,200,255,.7), transparent),
+      radial-gradient(1px 1px at 30% 48%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 58% 72%, rgba(214,200,255,.5), transparent),
+      radial-gradient(1px 1px at 9% 80%, rgba(255,255,255,.45), transparent),
+      radial-gradient(2px 2px at 92% 60%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 44% 90%, rgba(214,200,255,.45), transparent),
+      radial-gradient(ellipse at 50% -20%, #34245f 0%, #190f3a 48%, #0a0420 100%);
+  }
+  #overlay.hidden{display:none;}
+  #ovTitle{
+    margin-top:auto;
+    font-size:clamp(32px,10vw,48px); font-weight:bold; letter-spacing:.12em;
+    background:linear-gradient(180deg,#ffeaa6,#ffc14d);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 18px rgba(255,200,90,.35));
+  }
+  #ovTitleSub{
+    font-size:clamp(12px,3.6vw,16px); color:#cdbcff;
+    letter-spacing:.3em; margin-top:-8px;
   }
   #ovNote{
-    font-size:12px; color:#a995e0; line-height:1.7;
-    border:1px solid #5b46a8; border-radius:10px; padding:8px 14px;
-    background:rgba(46,34,96,.5);
+    font-size:10.5px; color:#9d8fd0; line-height:1.7; max-width:440px;
+    border:1px solid rgba(139,92,246,.45); border-radius:12px; padding:8px 14px;
+    background:rgba(29,19,64,.55);
   }
-  #ovNote b{display:block; font-size:17px; color:#ffd966; letter-spacing:.12em;}
-  .subRow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
-  #overlay.hidden{display:none;}
-  #ovTitle{font-size:clamp(22px,6vw,38px); font-weight:bold; color:#ffe066; text-shadow:0 0 16px rgba(255,224,102,.5);}
-  #ovMsg{font-size:14px; color:#d6c8ff; line-height:1.9;}
+  #ovNote b{display:block; font-size:14px; color:#ffd966; letter-spacing:.2em; margin-bottom:2px;}
+  #ovMsg{font-size:13px; color:#d6c8ff; line-height:1.9;}
+  .subRow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:auto;}
   .btn{
-    background:linear-gradient(180deg,#9d6bff,#6d3df0);
-    border:none; border-radius:10px; color:#fff;
-    font-size:16px; font-weight:bold; padding:12px 32px;
-    cursor:pointer; font-family:inherit;
-    box-shadow:0 4px 0 #4a28b0;
+    background:linear-gradient(180deg,#a87bff,#6d3df0);
+    border:none; border-radius:14px; color:#fff;
+    font-size:17px; font-weight:bold; padding:14px 42px;
+    cursor:pointer; font-family:inherit; letter-spacing:.05em;
+    box-shadow:0 4px 0 #4a28b0, 0 0 28px rgba(139,92,246,.35);
   }
   .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #4a28b0;}
-  .modeCol{display:flex; flex-direction:column; gap:8px; width:min(420px, 90vw);}
+  .modeCol{display:flex; flex-direction:column; gap:10px; width:min(430px, 92vw);}
   .mode{
-    background:#2e2260; border:2px solid #5b46a8; color:#e6ddff;
-    border-radius:10px; padding:10px 14px; font-size:14px; cursor:pointer; font-family:inherit;
-    text-align:left; line-height:1.5;
+    background:linear-gradient(180deg, rgba(46,32,99,.92), rgba(33,22,73,.92));
+    border:1.5px solid #5b46a8; color:#e6ddff;
+    border-radius:14px; padding:12px 16px; font-size:14px; cursor:pointer; font-family:inherit;
+    text-align:left; line-height:1.55;
+    transition:border-color .15s, box-shadow .15s;
   }
-  .mode small{color:#a995e0; font-size:11px; display:block;}
-  .mode.sel{background:#6d3df0; border-color:#c4afff;}
-  .mode.sel small{color:#ddd0ff;}
+  .mode small{color:#a995e0; font-size:11px; display:block; margin-top:2px;}
+  .mode.sel{
+    background:linear-gradient(180deg,#7c4dff,#5d2de0);
+    border-color:#c4afff;
+    box-shadow:0 0 20px rgba(139,92,246,.45);
+  }
+  .mode.sel small{color:#e4d9ff;}
   .lvlRow{display:flex; gap:8px; align-items:center;}
-  .lvlRow.hidden{visibility:hidden;}
+  .lvlRow.hidden{display:none;}
   .lvl{
     background:#2e2260; border:2px solid #5b46a8; color:#cbbcf5;
     border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; font-family:inherit;
@@ -175,8 +202,8 @@
   .lvl.sel{background:#6d3df0; color:#fff; border-color:#b9a0ff;}
   /* ストーリー */
   .btnSub{
-    background:#2e2260; border:2px solid #5b46a8; color:#e6ddff;
-    border-radius:10px; padding:9px 22px; font-size:14px; cursor:pointer; font-family:inherit;
+    background:rgba(46,34,96,.75); border:1.5px solid #5b46a8; color:#d6c8ff;
+    border-radius:12px; padding:10px 16px; font-size:13px; cursor:pointer; font-family:inherit;
   }
   #storyOv, #lyricsOv{
     position:fixed; inset:0; background:rgba(7,3,19,.95); z-index:40;
@@ -208,12 +235,13 @@
   #storyBody .say{color:#cdbcff;}
   #storyClose{margin-top:14px;}
   #muteBtn, #bgmBtn{
-    position:fixed; top:8px; z-index:30;
-    background:#2e2260; border:1px solid #5b46a8; color:#fff;
-    border-radius:8px; padding:5px 10px; font-size:14px; cursor:pointer;
+    position:fixed; right:10px; z-index:30;
+    background:rgba(46,34,96,.78); border:1px solid #5b46a8; color:#e6ddff;
+    border-radius:10px; padding:5px 12px; font-size:12px; cursor:pointer;
+    backdrop-filter:blur(4px);
   }
-  #muteBtn{right:10px;}
-  #bgmBtn{right:100px;}
+  #bgmBtn{top:8px;}
+  #muteBtn{top:42px;}
   /* タッチ操作 */
   #touchPad{
     display:none;
@@ -293,16 +321,17 @@
 
 <div id="help">
   ←→:移動 ↓:高速落下 スペース:ハードドロップ Z / ⟲:左回転 X・↑ / ⟳:右回転 C・Shift / 📦:ホールド P:ポーズ M:声(ぜんぶ/ひかえめ/OFF)<br>
-  ぷよは4つつなげると消える/テトリミノは横1列そろえると消える。連鎖で大ダメージ!
+  ぷよは同じ色4つで消える/テトリスのブロックは横1列そろえると消える。連鎖で大ダメージ!
 </div>
 
 <div id="overlay">
   <div id="ovTitle">ぷよてと</div>
+  <div id="ovTitleSub">〜 魔王サタンの逆襲 〜</div>
   <div id="ovNote"><b>本作は二次創作です</b>『ぷよぷよ』『テトリス』および魔王サタンの権利は各権利者に帰属します。非公式のファン作品です。<br>ストーリーは完全オリジナル(AI不使用)。</div>
-  <div id="ovMsg">フハハハハ!我こそは魔王サタン!<br>ぷよとテトリミノ、両方を従えてみせよ!</div>
+  <div id="ovMsg">フハハハハ!我こそは魔王サタン!<br>ぷよもテトリスも、両方従えてみせよ!</div>
   <div class="modeCol" id="modeCol">
     <button class="mode sel" data-mode="fusion">🌀 フュージョン(1人用)
-      <small>1つの盤面にぷよとテトリミノが両方降ってくる合体モード。連鎖もラインも!</small></button>
+      <small>ぷよとテトリスのブロックが、同じ盤面にいっしょに降ってくる合体モード。連鎖もラインも!</small></button>
     <button class="mode" data-mode="vs-puyo">😈 VS:ぷよで戦う
       <small>サタン(ぷよぷよ)vs CPU(テトリス)。連鎖でおじゃまを送り込め!</small></button>
     <button class="mode" data-mode="vs-tet">🟦 VS:テトリスで戦う
